@@ -484,8 +484,8 @@ if __name__ == "__main__":
     s.extBC = s.tubeExtFluxRadConvAdiabaticBack
 
     """ Internal BC: """
-    s.intBC = s.tubeIntTemp
-    s.intBC = s.tubeIntFlux
+    #s.intBC = s.tubeIntTemp
+    #s.intBC = s.tubeIntFlux
     s.intBC = s.tubeIntConv
 
     print('Nitrate salt:')

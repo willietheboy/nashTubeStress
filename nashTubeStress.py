@@ -18,6 +18,7 @@
 nashTubeStress.py
  -- steady-state temperature distribution (Gauss-Seidel iteration)
  -- biharmonic thermoelastic stress
+ -- tested 09/07/2019 with Python 2.7.15+ and pip packages 
 
 See also:
  -- Solar Energy 160 (2018) 368-379
@@ -25,15 +26,15 @@ See also:
 """
 
 import sys, time, os
-from math import exp, log, sqrt, pi
-import numpy as np
+from math import exp, log, sqrt, pi, ceil, floor
+import numpy as np # version 1.15.4
 from numpy import ma
-from scipy import weave
-from scipy.weave import converters
-import scipy.optimize as opt
+import weave # version 0.17.0
+from weave import converters
+import scipy.optimize as opt # version 1.1.0
 
 # Plotting:
-import matplotlib as mpl
+import matplotlib as mpl # version 2.2.3
 import matplotlib.pyplot as plt
 params = {'text.latex.preamble': [r'\usepackage{mathptmx,txfonts}']}
 plt.rcParams.update(params)
@@ -52,7 +53,8 @@ from matplotlib.lines import Line2D
 from matplotlib.projections import PolarAxes
 import matplotlib.transforms as mtransforms
 from mpl_toolkits.axisartist import SubplotHost
-from mpl_toolkits.axisartist.grid_finder import (FixedLocator, MaxNLocator, DictFormatter)
+from mpl_toolkits.axisartist.grid_finder import \
+    (FixedLocator, MaxNLocator, DictFormatter)
 import colormaps as cmaps # magma, inferno, plasma, viridis
 
 """ ________________________ PLOTTING FUNCTIONS _______________________ """
@@ -66,9 +68,11 @@ def plotStress(theta, r, sigma, sigmaMin, sigmaMax, filename):
     ax = fig.add_subplot(111, projection='polar')
     ax.set_theta_direction(-1)
     ax.set_theta_offset(np.radians(90))
-    #cmap = cm.get_cmap('jet')
-    cmap = cmaps.magma # magma, inferno, plasma, viridis...
-    levels = ticker.MaxNLocator(nbins=10).tick_values(sigmaMin*1e-6, sigmaMax*1e-6)
+    cmap = cm.get_cmap('magma')
+    #cmap = cmaps.magma # if you're matplotlib is older than version 2
+    levels = ticker.MaxNLocator(nbins=10).tick_values(
+        sigmaMin*1e-6, sigmaMax*1e-6
+    )
     cf = ax.contourf(theta, r, sigma*1e-6, levels=levels, cmap=cmap)
     ax.set_rmin(0)
     cb = fig.colorbar(cf, ax=ax)
@@ -83,6 +87,7 @@ def plotStress(theta, r, sigma, sigmaMin, sigmaMax, filename):
     ax.grid(axis='y', linewidth=0)
     ax.grid(axis='x', linewidth=0.2)
     plt.setp(ax.get_yticklabels(), visible=False)
+    #fig.tight_layout()
     fig.savefig(filename, transparent=True)
     plt.close(fig)
 
@@ -94,6 +99,19 @@ def fourierTheta(theta, a0, *c):
     for i, n in zip(range(0,len(c),2), range(1,(len(c)/2)+1)):
         ret += (c[i] * np.cos(n * theta)) + (c[i+1] * np.sin(n * theta))
     return ret
+
+def headerprint(string):
+    """ Prints a centered string to divide output sections. """
+    mywidth = 64
+    mychar = "="
+    numspaces = mywidth - len(string)
+    before = int(ceil(float(mywidth-len(string))/2))
+    after  = int(floor(float(mywidth-len(string))/2))
+    print("\n"+before*mychar+string+after*mychar+"\n")
+
+def valprint(string, value, unit):
+    """ Ensure uniform formatting of scalar value outputs. """
+    print("{0:>30}: {1: .10e} ({2})".format(string, value, unit))
 
 """ ________________________ CLASS DEFINITIONS ________________________ """
 
@@ -375,28 +393,28 @@ class Solver:
         p0 = [1.0] * (1 + (s.n * 2))
         # inside:
         popt1, pcov1 = opt.curve_fit(fourierTheta, theta, T[:,0], p0)
-        B0 = popt1[0]; BP = popt1[1]; BPP = popt1[2];
+        Tbar_i = popt1[0]; BP = popt1[1]; DP = popt1[2];
         # outside:
         popt2, pcov2 = opt.curve_fit(fourierTheta, theta, T[:,-1], p0)
-        D0 = popt2[0]; DP = popt2[1]; DPP = popt2[2];
-        kappa = (( (((BP * b) - (DP * a)) / (b2 + a2)) 
+        Tbar_o = popt2[0]; BPP = popt2[1]; DPP = popt2[2];
+        kappa = (( (((BP * b) - (BPP * a)) / (b2 + a2)) 
                    * np.cos(meshTheta)) + \
-                 ( (((BPP * b) - (DPP * a)) / (b2 + a2)) 
+                 ( (((DP * b) - (DPP * a)) / (b2 + a2)) 
                    * np.sin(meshTheta))) * \
             (meshR * a * b) / (b2 - a2)
-        kappa_ = (( (((BP * b) - (DP * a)) / (b2 + a2)) 
+        kappa_ = (( (((BP * b) - (BPP * a)) / (b2 + a2)) 
                    * np.sin(meshTheta)) - \
-                 ( (((BPP * b) - (DPP * a)) / (b2 + a2)) 
+                 ( (((DP * b) - (DPP * a)) / (b2 + a2)) 
                    * np.cos(meshTheta))) * \
             (meshR * a * b) / (b2 - a2)
         if self.bend:
-            kappaP = meshR * ((((BP * a) + (DP * b)) / (b2 + a2) * \
+            kappaP = meshR * ((((BP * a) + (BPP * b)) / (b2 + a2) * \
                                np.cos(meshTheta)) \
-                              + (((BPP * a) + (DPP * b)) / (b2 + a2) * \
+                              + (((DP * a) + (DPP * b)) / (b2 + a2) * \
                               np.sin(meshTheta)))
         else: kappaP = 0.0
         # Axisymmetrical thermal stress component:
-        C0 = ((alpha * E * (B0 - D0)) / (2*(1 - nu)*np.log(b/a)))
+        C0 = ((alpha * E * (Tbar_i - Tbar_o)) / (2*(1 - nu)*np.log(b/a)))
         QR = C0 * (- np.log(b/meshR) - \
                       (a2/(b2 - a2) * (1 - b2/meshR2) * np.log(b/a)))
         QTheta = C0 * (1 - np.log(b/meshR) - \
@@ -404,7 +422,8 @@ class Solver:
         QZ = C0 * (1 - (2*np.log(b/meshR)) - (2 * a2 / (b2 - a2) * \
                                                   np.log(b/a)))
         # Nonaxisymmetrical T:
-        T_theta = T - ((B0 - D0) * np.log(b / meshR) / np.log(b / a)) - D0
+        T_theta = T - ((Tbar_i - Tbar_o) * \
+                       np.log(b / meshR) / np.log(b / a)) - Tbar_o
         self.T_theta = T_theta
         # Nonaxisymmetric thermal stress component:
         C1 = (alpha * E) / (2 * (1 - nu))
@@ -443,18 +462,17 @@ class Solver:
         self.sigmaZ = sigmaZ[self.g.nt-1:,:]
         self.sigmaEq = sigmaEq[self.g.nt-1:,:]
         if self.debug:
-            print 'Timoshenko & Goodier method:'
-            print '\tB0 : {}'.format(B0)
-            print '\tB\'1 : {}'.format(BP)
-            print '\tB\'\'1 : {}'.format(BPP)
-            print '\tD0 : {}'.format(D0)
-            print '\tD\'1 : {}'.format(DP)
-            print '\tD\'\'1 : {}'.format(DPP)
-            print '\tsigmaR : {0:g} [MPa]'.format(self.sigmaR[0,-1]*1e-6)
-            print '\tsigmaRTheta : {0:g} [MPa]'.format(self.sigmaRTheta[0,-1]*1e-6)
-            print '\tsigmaTheta : {0:g} [MPa]'.format(self.sigmaTheta[0,-1]*1e-6)
-            print '\tsigmaZ : {0:g} [MPa]'.format(self.sigmaZ[0,-1]*1e-6)
-            print '\tmax(sigmaEq) : {0:g} [MPa]'.format(np.max(self.sigmaEq)*1e-6)
+            valprint('Tbar_i', Tbar_i, 'K')
+            valprint('B\'_1', BP, 'K')
+            valprint('D\'_1', DP, 'K')
+            valprint('Tbar_o', Tbar_o, 'K')
+            valprint('B\'\'_1', BPP, 'K')
+            valprint('D\'\'_1', DPP, 'K')
+            valprint('sigma_r', self.sigmaR[0,-1]*1e-6, 'MPa')
+            valprint('sigma_rTheta', self.sigmaRTheta[0,-1]*1e-6, 'MPa')
+            valprint('sigma_theta', self.sigmaTheta[0,-1]*1e-6, 'MPa')
+            valprint('sigma_z', self.sigmaZ[0,-1]*1e-6, 'MPa')
+            valprint('max(sigma_Eq)', np.max(self.sigmaEq)*1e-6, 'MPa')
 
 """ __________________________ USAGE (MAIN) ___________________________ """
 
@@ -465,7 +483,7 @@ if __name__ == "__main__":
     b = 33.4/2e3       # outside tube radius [mm->m]
 
     """ Create instance of Grid: """
-    g = Grid(nr=10, nt=91, rMin=a, rMax=b) # nr, nt -> resolution
+    g = Grid(nr=6, nt=91, rMin=a, rMax=b) # nr, nt -> resolution
 
     """ Create instance of LaplaceSolver: """
     s = Solver(g, debug=True, CG=0.85e6, k=20, T_int=723.15, R_f=0,
@@ -488,10 +506,11 @@ if __name__ == "__main__":
     #s.intBC = s.tubeIntFlux
     s.intBC = s.tubeIntConv
 
-    print('Nitrate salt:')
+    headerprint('NITRATE SALT')
     s.h_int = 10e3
     t = time.clock(); ret = s.solve(eps=1e-6); s.postProcessing()
-    print 'Time : {0:g} [sec]'.format(time.clock() - t)
+    valprint('Time', time.clock() - t, 'sec')
+    headerprint('END')
 
     """ To access the temperature distribution: """
     #     s.T[theta,radius] using indexes set by nr and nt
@@ -519,10 +538,11 @@ if __name__ == "__main__":
                s.sigmaEq.min(), s.sigmaEq.max(),
                'nitrateSalt_sigmaEq.pdf')
 
-    print('\nLiquid Sodium:')
+    headerprint('LIQUID SODIUM')
     s.h_int = 40e3
     t = time.clock(); ret = s.solve(eps=1e-6); s.postProcessing()
-    print 'Time : {0:g} [sec]'.format(time.clock() - t)
+    valprint('Time', time.clock() - t, 'sec')
+    headerprint('END')
 
     plotStress(g.theta, g.r, s.sigmaR,
                s.sigmaR.min(), s.sigmaR.max(), 

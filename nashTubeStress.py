@@ -397,54 +397,54 @@ class Solver:
         # outside:
         popt2, pcov2 = opt.curve_fit(fourierTheta, theta, T[:,-1], p0)
         Tbar_o = popt2[0]; BPP = popt2[1]; DPP = popt2[2];
-        kappa = (( (((BP * b) - (BPP * a)) / (b2 + a2)) 
-                   * np.cos(meshTheta)) + \
-                 ( (((DP * b) - (DPP * a)) / (b2 + a2)) 
-                   * np.sin(meshTheta))) * \
-            (meshR * a * b) / (b2 - a2)
-        kappa_ = (( (((BP * b) - (BPP * a)) / (b2 + a2)) 
-                   * np.sin(meshTheta)) - \
-                 ( (((DP * b) - (DPP * a)) / (b2 + a2)) 
-                   * np.cos(meshTheta))) * \
-            (meshR * a * b) / (b2 - a2)
+        kappa_theta = (( (((BP * b) - (BPP * a)) / (b2 + a2)) 
+                         * np.cos(meshTheta)) + \
+                       ( (((DP * b) - (DPP * a)) / (b2 + a2)) 
+                         * np.sin(meshTheta))) * \
+                         (meshR * a * b) / (b2 - a2)
+        kappa_tau = (( (((BP * b) - (BPP * a)) / (b2 + a2)) 
+                       * np.sin(meshTheta)) - \
+                     ( (((DP * b) - (DPP * a)) / (b2 + a2)) 
+                       * np.cos(meshTheta))) * \
+                       (meshR * a * b) / (b2 - a2)
         if self.bend:
-            kappaP = meshR * ((((BP * a) + (BPP * b)) / (b2 + a2) * \
-                               np.cos(meshTheta)) \
-                              + (((DP * a) + (DPP * b)) / (b2 + a2) * \
-                              np.sin(meshTheta)))
-        else: kappaP = 0.0
+            kappa_noM = meshR * ((((BP * a) + (BPP * b)) / (b2 + a2) * \
+                                  np.cos(meshTheta)) \
+                                 + (((DP * a) + (DPP * b)) / (b2 + a2) * \
+                                    np.sin(meshTheta)))
+        else: kappa_noM = 0.0
+        C = (alpha * E) / (2 * (1 - nu))
         # Axisymmetrical thermal stress component:
-        C0 = ((alpha * E * (Tbar_i - Tbar_o)) / (2*(1 - nu)*np.log(b/a)))
-        QR = C0 * (- np.log(b/meshR) - \
-                      (a2/(b2 - a2) * (1 - b2/meshR2) * np.log(b/a)))
-        QTheta = C0 * (1 - np.log(b/meshR) - \
-                          (a2/(b2 - a2) * (1 + b2/meshR2) * np.log(b/a)))
-        QZ = C0 * (1 - (2*np.log(b/meshR)) - (2 * a2 / (b2 - a2) * \
-                                                  np.log(b/a)))
+        kappa = (Tbar_i - Tbar_o) / np.log(b/a)
+        QR = kappa * C * (- np.log(b/meshR) - \
+                          (a2/(b2 - a2) * (1 - b2/meshR2) * np.log(b/a)))
+        QTheta = kappa * C * (1 - np.log(b/meshR) - \
+                              (a2/(b2 - a2) * (1 + b2/meshR2) * np.log(b/a)))
+        QZ = kappa * C * (1 - (2*np.log(b/meshR)) - (2 * a2 / (b2 - a2) * \
+                                                     np.log(b/a)))
         # Nonaxisymmetrical T:
         T_theta = T - ((Tbar_i - Tbar_o) * \
                        np.log(b / meshR) / np.log(b / a)) - Tbar_o
         self.T_theta = T_theta
         # Nonaxisymmetric thermal stress component:
-        C1 = (alpha * E) / (2 * (1 - nu))
-        QR += C1 * kappa * (1 - (a2 / meshR2)) * (1 - (b2 / meshR2))
-        QTheta += C1 * kappa * (3 - ((a2 + b2) / meshR2) - \
-                                    ((a2 * b2) / meshR4))
-        QZ += alpha * E * ((kappa * (nu / (1 - nu)) * \
-                                (2 - ((a2 + b2) / meshR2))) + \
-                               kappaP - T_theta)
-        QRTheta = C1 * kappa_ * (1 - (a2 / meshR2)) * (1 - (b2 / meshR2))
+        QR += C * kappa_theta * (1 - (a2 / meshR2)) * (1 - (b2 / meshR2))
+        QTheta += C * kappa_theta * (3 - ((a2 + b2) / meshR2) - \
+                                     ((a2 * b2) / meshR4))
+        QZ += alpha * E * ((kappa_theta * (nu / (1 - nu)) * \
+                            (2 - ((a2 + b2) / meshR2))) + \
+                           kappa_noM - T_theta)
+        QRTheta = C * kappa_tau * (1 - (a2 / meshR2)) * (1 - (b2 / meshR2))
         QEq = np.sqrt(0.5 * ((QR - QTheta)**2 + \
-                                 (QTheta - QZ)**2 + \
-                                 (QZ - QR)**2) + \
-                          6 * (QRTheta**2))
+                             (QTheta - QZ)**2 + \
+                             (QZ - QR)**2) + \
+                      6 * (QRTheta**2))
         # Pressure stress component:
         PR = ((a2 * self.P_i) / (b2 - a2)) * (1 - (b2 / meshR2))
         PTheta = ((a2 * self.P_i) / (b2 - a2)) * (1 + (b2 / meshR2))
         PZ = 0 #(a2 * self.P_i) / (b2 - a2)
         PEq = np.sqrt(0.5 * ((PR - PTheta)**2 + \
-                                 (PTheta - PZ)**2 + \
-                                 (PZ - PR)**2))
+                             (PTheta - PZ)**2 + \
+                             (PZ - PR)**2))
         sigmaR = QR + PR
         sigmaTheta = QTheta + PTheta
         sigmaZ = QZ + PZ

@@ -55,7 +55,8 @@ import matplotlib.transforms as mtransforms
 from mpl_toolkits.axisartist import SubplotHost
 from mpl_toolkits.axisartist.grid_finder import \
     (FixedLocator, MaxNLocator, DictFormatter)
-import colormaps as cmaps # magma, inferno, plasma, viridis
+# if you're matplotlib is older than version 2:
+#import colormaps as cmaps # magma, inferno, plasma, viridis
 
 """ ________________________ PLOTTING FUNCTIONS _______________________ """
 
@@ -69,7 +70,7 @@ def plotStress(theta, r, sigma, sigmaMin, sigmaMax, filename):
     ax.set_theta_direction(-1)
     ax.set_theta_offset(np.radians(90))
     cmap = cm.get_cmap('magma')
-    #cmap = cmaps.magma # if you're matplotlib is older than version 2
+    #cmap = cmaps.magma
     levels = ticker.MaxNLocator(nbins=10).tick_values(
         sigmaMin*1e-6, sigmaMax*1e-6
     )

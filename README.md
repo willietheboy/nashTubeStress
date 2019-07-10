@@ -5,7 +5,7 @@
 ## Thermoelastic stress in concentrating solar receiver tubes: A retrospect on stress analysis methodology, and comparison of salt and sodium
 Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
 
-### "__main__":
+### Test output:
 
 <code>
 ==========================NITRATE SALT==========================

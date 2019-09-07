@@ -22,7 +22,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                    sigma_theta: -102.1835 (MPa)
                        sigma_z: -378.2248 (MPa)
                  max(sigma_Eq):  338.8910 (MPa)
-                          Time:  0.1144 (sec)
+                          Time:  0.1281 (sec)
 
 ====================== HTC : 40e3 W/m^s/K ======================
 
@@ -37,7 +37,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                    sigma_theta: -110.4248 (MPa)
                        sigma_z: -253.2035 (MPa)
                  max(sigma_Eq):  219.8765 (MPa)
-                          Time:  0.0518 (sec)
+                          Time:  0.0521 (sec)
 
 =================== ASTRI 2.0 REFERENCE CASE ===================
 
@@ -47,7 +47,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                              b:  12.7000 (mm)
                              a:  11.0500 (mm)
                              k:  19.1500 (kg*m/s^3/K)
-                         alpha:  18.8150 (x1e6 K^-1)
+                         alpha:  18.1500 (x1e6 K^-1)
                              E:  168.0000 (GPa)
                             nu:  0.3100 (-)
                             CG:  750.0000 (kW/m^2)
@@ -78,8 +78,8 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                          D''_1:  0.0000 (K)
                        sigma_r:  0.0000 (MPa)
                   sigma_rTheta:  0.0000 (MPa)
-                   sigma_theta: -107.8561 (MPa)
-                       sigma_z: -313.4523 (MPa)
-                 max(sigma_Eq):  275.8215 (MPa)
-                          Time:  0.0515 (sec)
+                   sigma_theta: -104.0440 (MPa)
+                       sigma_z: -302.3736 (MPa)
+                 max(sigma_Eq):  266.0729 (MPa)
+                          Time:  0.0514 (sec)
 </code>

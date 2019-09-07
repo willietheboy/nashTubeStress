@@ -690,7 +690,7 @@ if __name__ == "__main__":
     valprint('a', a*1e3, 'mm')
     k = 19.15          # thermal conductivity (kg*m/s^3/K)
     valprint('k', k, 'kg*m/s^3/K')
-    alpha = 18.815e-6  # thermal dilation (K^-1)
+    alpha = 18.15e-6  # thermal dilation (K^-1)
     valprint('alpha', alpha*1e6, 'x1e6 K^-1')
     E = 168e9          # Youngs modulus (Pa)
     valprint('E', E*1e-9, 'GPa')

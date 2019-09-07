@@ -101,20 +101,134 @@ def fourierTheta(theta, a0, *c):
         ret += (c[i] * np.cos(n * theta)) + (c[i+1] * np.sin(n * theta))
     return ret
 
-def headerprint(string):
+def HTC(debug, thermo, a, b, k, mode, arg):
+    """
+    Inputs:
+        debug : (default:False)
+        thermo : liquidSodium, nitrateSalt, chlorideSalt
+        a : tube inner diameter (m)
+        b : tube outer diameter (m)
+        k : tube thermal conductivity (W/(m.K))
+        mode : 'velocity','mdot','heatCapRate' (m/s,kg/s,???)
+        arg : either velocity, mass-flow or heat capacity rate
+    Output:
+        h : heat transfer coefficient (W/(m^2.K))
+    """
+    d_i = a*2 # inner pipe diameter [m]
+    t = b - a # tube wall thickness [m]
+    A_d_i = pi * pow(d_i/2., 2) # cross sectional area of pipe flow
+    if mode=='velocity':
+        U = arg # m/s
+        mdot = U * (A_d_i * thermo.rho)
+        hcr = mdot * thermo.Cp
+    elif mode=='mdot':
+        mdot = arg # kg/s
+        U = mdot / (A_d_i * thermo.rho)
+        hcr = mdot * thermo.Cp
+    elif mode=='heatCapRate':
+        hcr = arg # 
+        mdot = hcr / thermo.Cp
+        U = mdot / (A_d_i * thermo.rho)
+    else: sys.exit('Incorrect mode in HTC(mode, thermo, a, arg)!')
+    Re = U * d_i / thermo.nu
+    f = pow(0.790 * np.log(Re) - 1.64, -2)
+    DP_f = -f * (0.5 * thermo.rho * pow(U, 2)) \
+              / d_i # kg/m/s^2 for a metre of pipe!
+    if isinstance(thermo, liquidSodium):
+        # Skupinshi, Tortel and Vautrey (Holman p318):
+        Nu = 4.82 + 0.0185 * pow(Re * thermo.Pr, 0.827)
+    else:
+        # Dittus-Boelter (Holman p286):
+        Nu = 0.023 * pow(Re, 0.8) * pow(thermo.Pr, 0.4)
+    h = Nu * thermo.kappa / d_i
+    Bi = (t * h) / k
+    if debug==True:
+        valprint('U', U, 'm/s')
+        valprint('mdot', mdot, 'kg/s')
+        valprint('deltaP', DP_f, 'Pa/m')
+        valprint('HCR', hcr, 'J/K/s')
+        valprint('h_int', h, 'W/m^2/K')
+        valprint('Bi', Bi)
+    return h
+
+def headerprint(string, mychar='='):
     """ Prints a centered string to divide output sections. """
     mywidth = 64
-    mychar = "="
     numspaces = mywidth - len(string)
     before = int(ceil(float(mywidth-len(string))/2))
     after  = int(floor(float(mywidth-len(string))/2))
     print("\n"+before*mychar+string+after*mychar+"\n")
 
-def valprint(string, value, unit):
+def valprint(string, value, unit='-'):
     """ Ensure uniform formatting of scalar value outputs. """
-    print("{0:>30}: {1: .10e} ({2})".format(string, value, unit))
+    print("{0:>30}: {1: .3f} ({2})".format(string, value, unit))
 
 """ ________________________ CLASS DEFINITIONS ________________________ """
+
+class liquidSodium:
+    """
+    Usage: thermo = liquidSodium()
+           thermo.update(T) # T in [K]
+    """
+    def __init__ (self, debug):
+        self.debug = debug
+        if debug==True:
+            headerprint('Liquid Sodium', ' ')
+
+    def update (self, T):
+        self.T = T
+        T_c = 2503.7 # K            
+        rho_c = 219. # kg/m^3
+        self.rho = rho_c + 275.32*(1 - self.T/T_c) + \
+                   511.58*sqrt(1 - self.T/T_c) # kg/m^3
+        self.Cp = (1.6582 - 8.4790e-4*self.T + \
+                   4.4541e-7*pow(self.T, 2) - \
+                   2992.6*pow(self.T, -2) ) *1e3 # m^2/s^2/K
+        self.mu = exp(-6.4406 - 0.3958*log(self.T) + \
+                      556.835/self.T)# kg/m/s
+        self.kappa = 124.67 - 0.11381*self.T + \
+                     5.5226e-5*pow(self.T, 2) - \
+                     1.1842e-8*pow(self.T, 3) # kg*m/s^3/K
+        self.nu = self.mu / self.rho
+        self.alpha = self.kappa / (self.rho * self.Cp)
+        self.Pr = self.nu / self.alpha
+        if self.debug==True:
+            valprint('T', self.T, 'K')
+            valprint('rho', self.rho, 'kg/m^3')
+            valprint('Cp', self.Cp, 'm^2/s^2/K')
+            valprint('mu', self.mu, 'kg/m/s')
+            valprint('kappa', self.kappa, 'kg*m/s^3/K')
+            valprint('Pr', self.Pr)
+
+class nitrateSalt:
+    """
+    Usage: thermo = nitrateSalt()
+           thermo.update(T) # T in [K]
+    """
+    def __init__ (self, debug):
+        self.debug = debug
+        if debug==True:
+            headerprint('Nitrate Salt', ' ')
+
+    def update (self, T):
+        self.T = min(T, 873.15) # K
+        self.rho = 2263.7234 - 0.636*self.T # kg/m^3
+        self.Cp = 1396.0182 + 0.172*self.T # m^2/s^2/K
+        self.mu = (-0.0001474*pow(self.T, 3) + \
+                   0.348886926471821*pow(self.T, 2) \
+                   - 277.603979928015*self.T + \
+                   75514.7595133316) *1e-6 # kg/m/s
+        self.kappa = 0.00019*self.T + 0.3911015 # kg*m/s^3/K
+        self.nu = self.mu / self.rho
+        self.alpha = self.kappa / (self.rho * self.Cp)
+        self.Pr = self.nu / self.alpha
+        if self.debug==True:
+            valprint('T', self.T, 'K')
+            valprint('rho', self.rho, 'kg/m^3')
+            valprint('Cp', self.Cp, 'm^2/s^2/K')
+            valprint('mu', self.mu, 'kg/m/s')
+            valprint('kappa', self.kappa, 'kg*m/s^3/K')
+            valprint('Pr', self.Pr)
 
 class Grid:
     
@@ -316,11 +430,6 @@ class Solver:
         """ fixedValue boundary condition """        
         self.meshT[:,-1] = self.T_ext
 
-    def tubeExtFlux(self):        
-        """ Heat flux boundary condition """
-        self.meshT[:,-1] = ((self.g.dr * self.CG) / 
-                            self.k) + self.meshT[:, -2]
-
     def tubeExtConv(self):
         """ Convective boundary condition """        
         self.meshT[:, -1] = (self.meshT[:,-2] + \
@@ -328,7 +437,20 @@ class Solver:
                                self.k) * self.T_ext)) \
             / (1 + (self.g.dr * self.h_ext / self.k))
 
-    def tubeExtFluxRadConv(self): 
+    def tubeExtFlux(self):        
+        """ Heat flux boundary condition """
+        self.meshT[:,-1] = ((self.g.dr * self.CG) / 
+                            self.k) + self.meshT[:, -2]
+
+    def tubeExtCosFlux(self): 
+        """ 100% absorbed cosine flux boundary condition """
+        self.heatFluxInc = (self.g.tubeFront * \
+                            self.CG * self.g.cosTheta)
+        heatFluxAbs = self.heatFluxInc
+        self.meshT[:,-1] = self.meshT[:,-2] + \
+                           (heatFluxAbs * self.g.dr / self.k)
+
+    def tubeExtCosFluxRadConv(self): 
         """ Heat flux, re-radiation and convection boundary condition """
         self.heatFluxInc = (self.g.tubeFront * \
                             self.CG * self.g.cosTheta)
@@ -339,7 +461,7 @@ class Solver:
         self.meshT[:,-1] = self.meshT[:,-2] + \
                            (heatFluxAbs * self.g.dr / self.k)
 
-    def tubeExtFluxRadConvAdiabaticBack(self): 
+    def tubeExtCosFluxRadConvAdiabaticBack(self): 
         """ Heat flux, re-radiation and convection boundary condition """
         self.heatFluxInc = (self.g.tubeFront * \
                             self.CG * self.g.cosTheta)
@@ -484,7 +606,7 @@ if __name__ == "__main__":
     b = 33.4/2e3       # outside tube radius [mm->m]
 
     """ Create instance of Grid: """
-    g = Grid(nr=6, nt=91, rMin=a, rMax=b) # nr, nt -> resolution
+    g = Grid(nr=12, nt=91, rMin=a, rMax=b) # nr, nt -> resolution
 
     """ Create instance of LaplaceSolver: """
     s = Solver(g, debug=True, CG=0.85e6, k=20, T_int=723.15, R_f=0,
@@ -499,19 +621,18 @@ if __name__ == "__main__":
     #s.extBC = s.tubeExtTemp
     #s.extBC = s.tubeExtFlux
     #s.extBC = s.tubeExtConv
-    #s.extBC = s.tubeExtFluxRadConv
-    s.extBC = s.tubeExtFluxRadConvAdiabaticBack
+    #s.extBC = s.tubeExtCosFluxRadConv
+    s.extBC = s.tubeExtCosFluxRadConvAdiabaticBack
 
     """ Internal BC: """
     #s.intBC = s.tubeIntTemp
     #s.intBC = s.tubeIntFlux
     s.intBC = s.tubeIntConv
 
-    headerprint('NITRATE SALT')
+    headerprint(' HTC : 10e3 W/m^s/K ')
     s.h_int = 10e3
     t = time.clock(); ret = s.solve(eps=1e-6); s.postProcessing()
     valprint('Time', time.clock() - t, 'sec')
-    headerprint('END')
 
     """ To access the temperature distribution: """
     #     s.T[theta,radius] using indexes set by nr and nt
@@ -525,38 +646,103 @@ if __name__ == "__main__":
 
     plotStress(g.theta, g.r, s.sigmaR,
                s.sigmaR.min(), s.sigmaR.max(), 
-               'nitrateSalt_sigmaR.pdf')
+               'htc10_sigmaR.pdf')
     plotStress(g.theta, g.r, s.sigmaTheta,
                s.sigmaTheta.min(), s.sigmaTheta.max(), 
-               'nitrateSalt_sigmaTheta.pdf')
+               'htc10_sigmaTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaRTheta, 
                s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
-               'nitrateSalt_sigmaRTheta.pdf')
+               'htc10_sigmaRTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaZ, 
                s.sigmaZ.min(), s.sigmaZ.max(), 
-               'nitrateSalt_sigmaZ.pdf')
+               'htc10_sigmaZ.pdf')
     plotStress(g.theta, g.r, s.sigmaEq, 
                s.sigmaEq.min(), s.sigmaEq.max(),
-               'nitrateSalt_sigmaEq.pdf')
+               'htc10_sigmaEq.pdf')
 
-    headerprint('LIQUID SODIUM')
+    headerprint(' HTC : 40e3 W/m^s/K ')
     s.h_int = 40e3
     t = time.clock(); ret = s.solve(eps=1e-6); s.postProcessing()
     valprint('Time', time.clock() - t, 'sec')
-    headerprint('END')
 
     plotStress(g.theta, g.r, s.sigmaR,
                s.sigmaR.min(), s.sigmaR.max(), 
-               'liquidSodium_sigmaR.pdf')
+               'htc40_sigmaR.pdf')
     plotStress(g.theta, g.r, s.sigmaTheta,
                s.sigmaTheta.min(), s.sigmaTheta.max(), 
-               'liquidSodium_sigmaTheta.pdf')
+               'htc40_sigmaTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaRTheta, 
                s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
-               'liquidSodium_sigmaRTheta.pdf')
+               'htc40_sigmaRTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaZ, 
                s.sigmaZ.min(), s.sigmaZ.max(), 
-               'liquidSodium_sigmaZ.pdf')
+               'htc40_sigmaZ.pdf')
     plotStress(g.theta, g.r, s.sigmaEq, 
                s.sigmaEq.min(), s.sigmaEq.max(),
-               'liquidSodium_sigmaEq.pdf')
+               'htc40_sigmaEq.pdf')
+
+
+    headerprint(' ASTRI 2.0 REFERENCE CASE ')
+    headerprint('Inco625 at 650 degC', ' ')
+    b = 25.4e-3/2.     # inside tube radius (mm->m)
+    valprint('b', b*1e3, 'mm')
+    a = b - 1.65e-3    # outside tube radius (mm->m)
+    valprint('a', a*1e3, 'mm')
+    k = 19.15          # thermal conductivity (kg*m/s^3/K)
+    valprint('k', k, 'kg*m/s^3/K')
+    alpha = 18.815e-6  # thermal dilation (K^-1)
+    valprint('alpha', alpha*1e6, 'x1e6 K^-1')
+    E = 168e9          # Youngs modulus (Pa)
+    valprint('E', E*1e-9, 'GPa')
+    nu = 0.31          # Poisson
+    valprint('nu', nu)
+    CG = 7.5e5        # absorbed flux (W/m^2)
+    valprint('CG', CG*1e-3, 'kW/m^2')
+    mdot = 0.2         # mass flow (kg/s)
+    valprint('mdot', mdot, 'kg/s')
+    T_int = 887        # bulk sodium temperature (K)
+    
+    """ Create instance of Grid: """
+    g = Grid(nr=12, nt=91, rMin=a, rMax=b) # nr, nt -> resolution
+
+    """ Create instance of LaplaceSolver: """
+    s = Solver(g, debug=True, CG=CG, k=k, T_int=T_int, R_f=0,
+               P_i=0e5, alpha=alpha, E=E, nu=nu, n=1,
+               bend=False)
+
+    """ External BC: """
+    #s.extBC = s.tubeExtTemp
+    s.extBC = s.tubeExtCosFlux
+    #s.extBC = s.tubeExtConv
+    #s.extBC = s.tubeExtCosFluxRadConv
+    #s.extBC = s.tubeExtCosFluxRadConvAdiabaticBack
+
+    """ Internal BC: """
+    #s.intBC = s.tubeIntTemp
+    #s.intBC = s.tubeIntFlux
+    s.intBC = s.tubeIntConv
+    sodium = liquidSodium(True); sodium.update(T_int)
+    #s.h_int = HTC(True, sodium, a, b, s.k, 'velocity', 4.0)
+    s.h_int = HTC(True, sodium, a, b, s.k, 'mdot', mdot)
+    #s.h_int = HTC(True, sodium, a, b, s.k, 'heatCapRate', 5000)
+
+    t = time.clock(); ret = s.solve(eps=1e-6)
+    headerprint('Analytical thermoelastic stress', ' ')
+    s.postProcessing()
+    valprint('Time', time.clock() - t, 'sec')
+
+    plotStress(g.theta, g.r, s.sigmaR,
+               s.sigmaR.min(), s.sigmaR.max(), 
+               'Inco625_liquidSodium_sigmaR.pdf')
+    plotStress(g.theta, g.r, s.sigmaTheta,
+               s.sigmaTheta.min(), s.sigmaTheta.max(), 
+               'Inco625_liquidSodium_sigmaTheta.pdf')
+    plotStress(g.theta, g.r, s.sigmaRTheta, 
+               s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
+               'Inco625_liquidSodium_sigmaRTheta.pdf')
+    plotStress(g.theta, g.r, s.sigmaZ, 
+               s.sigmaZ.min(), s.sigmaZ.max(), 
+               'Inco625_liquidSodium_sigmaZ.pdf')
+    plotStress(g.theta, g.r, s.sigmaEq, 
+               s.sigmaEq.min(), s.sigmaEq.max(),
+               'Inco625_liquidSodium_sigmaEq.pdf')

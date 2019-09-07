@@ -9,38 +9,77 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
 ### Test output:
 
 <code>
-==========================NITRATE SALT==========================
+====================== HTC : 10e3 W/m^s/K ======================
 
-                        Tbar_i:  7.4990388386e+02 (K)
-                          B'_1:  4.1455919687e+01 (K)
-                          D'_1: -3.2677034242e-06 (K)
-                        Tbar_o:  7.7109006872e+02 (K)
-                         B''_1:  7.4515642117e+01 (K)
-                         D''_1: -5.0118148440e-06 (K)
-                       sigma_r:  0.0000000000e+00 (MPa)
-                  sigma_rTheta: -0.0000000000e+00 (MPa)
-                   sigma_theta: -1.0176311648e+02 (MPa)
-                       sigma_z: -3.7605655552e+02 (MPa)
-                 max(sigma_Eq):  3.3690588859e+02 (MPa)
-                          Time:  2.6981000000e-02 (sec)
+                        Tbar_i:  750.204 (K)
+                          B'_1:  41.834 (K)
+                          D'_1:  0.000 (K)
+                        Tbar_o:  771.501 (K)
+                         B''_1:  75.027 (K)
+                         D''_1: -0.000 (K)
+                       sigma_r:  0.000 (MPa)
+                  sigma_rTheta: -0.000 (MPa)
+                   sigma_theta: -102.184 (MPa)
+                       sigma_z: -378.225 (MPa)
+                 max(sigma_Eq):  338.891 (MPa)
+                          Time:  0.131 (sec)
 
-===============================END==============================
+====================== HTC : 40e3 W/m^s/K ======================
+
+                        Tbar_i:  729.984 (K)
+                          B'_1:  10.665 (K)
+                          D'_1: -0.000 (K)
+                        Tbar_o:  751.502 (K)
+                         B''_1:  44.359 (K)
+                         D''_1:  0.000 (K)
+                       sigma_r:  0.000 (MPa)
+                  sigma_rTheta:  0.000 (MPa)
+                   sigma_theta: -110.425 (MPa)
+                       sigma_z: -253.203 (MPa)
+                 max(sigma_Eq):  219.877 (MPa)
+                          Time:  0.052 (sec)
+
+=================== ASTRI 2.0 REFERENCE CASE ===================
 
 
-==========================LIQUID SODIUM=========================
+                       Inco625 at 650 degC                      
 
-                        Tbar_i:  7.2990709087e+02 (K)
-                          B'_1:  1.0555547237e+01 (K)
-                          D'_1: -3.7888521914e-07 (K)
-                        Tbar_o:  7.5130989376e+02 (K)
-                         B''_1:  4.4091456221e+01 (K)
-                         D''_1:  3.2075837869e-07 (K)
-                       sigma_r:  0.0000000000e+00 (MPa)
-                  sigma_rTheta:  0.0000000000e+00 (MPa)
-                   sigma_theta: -1.0989052163e+02 (MPa)
-                       sigma_z: -2.5181207807e+02 (MPa)
-                 max(sigma_Eq):  2.1866295707e+02 (MPa)
-                          Time:  1.2994000000e-02 (sec)
+                             b:  12.700 (mm)
+                             a:  11.050 (mm)
+                             k:  19.150 (kg*m/s^3/K)
+                         alpha:  18.815 (x1e6 K^-1)
+                             E:  168.000 (GPa)
+                            nu:  0.310 (-)
+                            CG:  750.000 (kW/m^2)
+                          mdot:  0.200 (kg/s)
 
-===============================END==============================
+                          Liquid Sodium                         
+
+                             T:  887.000 (K)
+                           rho:  807.871 (kg/m^3)
+                            Cp:  1252.744 (m^2/s^2/K)
+                            mu:  0.000 (kg/m/s)
+                         kappa:  58.907 (kg*m/s^3/K)
+                            Pr:  0.004 (-)
+                             U:  0.645 (m/s)
+                          mdot:  0.200 (kg/s)
+                        deltaP: -155.117 (Pa/m)
+                           HCR:  250.549 (J/K/s)
+                         h_int:  17512.468 (W/m^2/K)
+                            Bi:  1.509 (-)
+
+                 Analytical thermoelastic stress                
+
+                        Tbar_i:  902.514 (K)
+                          B'_1:  23.702 (K)
+                          D'_1: -0.000 (K)
+                        Tbar_o:  924.482 (K)
+                         B''_1:  57.574 (K)
+                         D''_1:  0.000 (K)
+                       sigma_r:  0.000 (MPa)
+                  sigma_rTheta:  0.000 (MPa)
+                   sigma_theta: -107.856 (MPa)
+                       sigma_z: -313.452 (MPa)
+                 max(sigma_Eq):  275.822 (MPa)
+                          Time:  0.052 (sec)
 </code>

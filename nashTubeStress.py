@@ -161,7 +161,7 @@ def headerprint(string, mychar='='):
 
 def valprint(string, value, unit='-'):
     """ Ensure uniform formatting of scalar value outputs. """
-    print("{0:>30}: {1: .3f} ({2})".format(string, value, unit))
+    print("{0:>30}: {1: .4f} ({2})".format(string, value, unit))
 
 """ ________________________ CLASS DEFINITIONS ________________________ """
 
@@ -196,7 +196,7 @@ class liquidSodium:
             valprint('T', self.T, 'K')
             valprint('rho', self.rho, 'kg/m^3')
             valprint('Cp', self.Cp, 'm^2/s^2/K')
-            valprint('mu', self.mu, 'kg/m/s')
+            valprint('mu', self.mu*1e6, 'x1e6 kg/m/s')
             valprint('kappa', self.kappa, 'kg*m/s^3/K')
             valprint('Pr', self.Pr)
 
@@ -226,7 +226,7 @@ class nitrateSalt:
             valprint('T', self.T, 'K')
             valprint('rho', self.rho, 'kg/m^3')
             valprint('Cp', self.Cp, 'm^2/s^2/K')
-            valprint('mu', self.mu, 'kg/m/s')
+            valprint('mu', self.mu*1e6, 'x1e6 kg/m/s')
             valprint('kappa', self.kappa, 'kg*m/s^3/K')
             valprint('Pr', self.Pr)
 

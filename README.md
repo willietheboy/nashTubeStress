@@ -22,7 +22,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                    sigma_theta: -102.184 (MPa)
                        sigma_z: -378.225 (MPa)
                  max(sigma_Eq):  338.891 (MPa)
-                          Time:  0.131 (sec)
+                          Time:  0.128 (sec)
 
 ====================== HTC : 40e3 W/m^s/K ======================
 

@@ -22,7 +22,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                    sigma_theta: -102.1835 (MPa)
                        sigma_z: -378.2248 (MPa)
                  max(sigma_Eq):  338.8910 (MPa)
-                          Time:  0.1281 (sec)
+                          Time:  0.1161 (sec)
 
 ====================== HTC : 40e3 W/m^s/K ======================
 
@@ -37,7 +37,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                    sigma_theta: -110.4248 (MPa)
                        sigma_z: -253.2035 (MPa)
                  max(sigma_Eq):  219.8765 (MPa)
-                          Time:  0.0521 (sec)
+                          Time:  0.0520 (sec)
 
 =================== ASTRI 2.0 REFERENCE CASE ===================
 
@@ -68,7 +68,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                          h_int:  17512.4682 (W/m^2/K)
                             Bi:  1.5089 (-)
 
-                 Analytical thermoelastic stress                
+                    Generalised plane strain                    
 
                         Tbar_i:  902.5141 (K)
                           B'_1:  23.7020 (K)
@@ -81,5 +81,19 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                    sigma_theta: -104.0440 (MPa)
                        sigma_z: -302.3736 (MPa)
                  max(sigma_Eq):  266.0729 (MPa)
-                          Time:  0.0514 (sec)
+                          Time:  0.0511 (sec)
+
+      Generalise plane strain with annulled bending moment      
+
+                        Tbar_i:  902.5141 (K)
+                          B'_1:  23.7020 (K)
+                          D'_1: -0.0000 (K)
+                        Tbar_o:  924.4818 (K)
+                         B''_1:  57.5737 (K)
+                         D''_1:  0.0000 (K)
+                       sigma_r:  0.0000 (MPa)
+                  sigma_rTheta:  0.0000 (MPa)
+                   sigma_theta: -104.0440 (MPa)
+                       sigma_z: -166.6702 (MPa)
+                 max(sigma_Eq):  145.8186 (MPa)
 </code>

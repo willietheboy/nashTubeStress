@@ -726,23 +726,45 @@ if __name__ == "__main__":
     s.h_int = HTC(True, sodium, a, b, s.k, 'mdot', mdot)
     #s.h_int = HTC(True, sodium, a, b, s.k, 'heatCapRate', 5000)
 
+    ## Generalised plane strain:
     t = time.clock(); ret = s.solve(eps=1e-6)
-    headerprint('Analytical thermoelastic stress', ' ')
+    headerprint('Generalised plane strain', ' ')
     s.postProcessing()
     valprint('Time', time.clock() - t, 'sec')
 
     plotStress(g.theta, g.r, s.sigmaR,
                s.sigmaR.min(), s.sigmaR.max(), 
-               'Inco625_liquidSodium_sigmaR.pdf')
+               'ASTRI2_GPS_sigmaR.pdf')
     plotStress(g.theta, g.r, s.sigmaTheta,
                s.sigmaTheta.min(), s.sigmaTheta.max(), 
-               'Inco625_liquidSodium_sigmaTheta.pdf')
+               'ASTRI2_GPS_sigmaTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaRTheta, 
                s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
-               'Inco625_liquidSodium_sigmaRTheta.pdf')
+               'ASTRI2_GPS_sigmaRTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaZ, 
                s.sigmaZ.min(), s.sigmaZ.max(), 
-               'Inco625_liquidSodium_sigmaZ.pdf')
+               'ASTRI2_GPS_sigmaZ.pdf')
     plotStress(g.theta, g.r, s.sigmaEq, 
                s.sigmaEq.min(), s.sigmaEq.max(),
-               'Inco625_liquidSodium_sigmaEq.pdf')
+               'ASTRI2_GPS_sigmaEq.pdf')
+
+    ## Generalised plane strain with annulled bending:
+    s.bend = True
+    headerprint('Generalise plane strain with annulled bending moment', ' ')
+    s.postProcessing()
+
+    plotStress(g.theta, g.r, s.sigmaR,
+               s.sigmaR.min(), s.sigmaR.max(), 
+               'ASTRI2_GPS-AB_sigmaR.pdf')
+    plotStress(g.theta, g.r, s.sigmaTheta,
+               s.sigmaTheta.min(), s.sigmaTheta.max(), 
+               'ASTRI2_GPS-AB_sigmaTheta.pdf')
+    plotStress(g.theta, g.r, s.sigmaRTheta, 
+               s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
+               'ASTRI2_GPS-AB_sigmaRTheta.pdf')
+    plotStress(g.theta, g.r, s.sigmaZ, 
+               s.sigmaZ.min(), s.sigmaZ.max(), 
+               'ASTRI2_GPS-AB_sigmaZ.pdf')
+    plotStress(g.theta, g.r, s.sigmaEq, 
+               s.sigmaEq.min(), s.sigmaEq.max(),
+               'ASTRI2_GPS-AB_sigmaEq.pdf')

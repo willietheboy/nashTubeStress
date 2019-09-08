@@ -83,7 +83,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                  max(sigma_Eq):  266.0729 (MPa)
                           Time:  0.0511 (sec)
 
-      Generalise plane strain with annulled bending moment      
+      Generalised plane strain with annulled bending moment      
 
                         Tbar_i:  902.5141 (K)
                           B'_1:  23.7020 (K)

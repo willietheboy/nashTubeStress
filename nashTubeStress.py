@@ -750,7 +750,7 @@ if __name__ == "__main__":
 
     ## Generalised plane strain with annulled bending:
     s.bend = True
-    headerprint('Generalise plane strain with annulled bending moment', ' ')
+    headerprint('Generalised plane strain with annulled bending moment', ' ')
     s.postProcessing()
 
     plotStress(g.theta, g.r, s.sigmaR,

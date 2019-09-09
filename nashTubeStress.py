@@ -629,6 +629,13 @@ if __name__ == "__main__":
           (c2-c0) * (1 - (np.log(b / g.r) / np.log(b / a)))
     s.postProcessing()
 
+    headerprint('Table II, p89 -- radius vs. tangential stress', ' ')
+    radius_inch = np.linspace(4,12,9)
+    radius = Q_(radius_inch, 'inch').to('m')
+    sigmaTheta = Q_(np.interp(radius, s.g.r[0,:], s.sigmaTheta[0,:]), 'Pa').to('psi')
+    for r, sig_t in zip(radius_inch, sigmaTheta):
+        valprint('{} (in.)'.format(r), sig_t.magnitude, 'psi')
+
     plotStress(g.theta, g.r, s.sigmaR,
                s.sigmaR.min(), s.sigmaR.max(), 
                'NACA-TR-1059_sigmaR.pdf')

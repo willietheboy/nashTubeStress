@@ -28,6 +28,18 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                        sigma_z: -1234.2440 (MPa)
                       sigma_Eq:  1098.1029 (MPa)
 
+          Table II, p89 -- radius vs. tangential stress         
+
+                     4.0 (in.):  126988.0387 (psi)
+                     5.0 (in.):  69864.6296 (psi)
+                     6.0 (in.):  35464.0469 (psi)
+                     7.0 (in.):  11712.7526 (psi)
+                     8.0 (in.): -6252.1660 (psi)
+                     9.0 (in.): -20725.2239 (psi)
+                    10.0 (in.): -32920.4657 (psi)
+                    11.0 (in.): -43538.4796 (psi)
+                    12.0 (in.): -53011.9613 (psi)
+
 ================ NPS Sch. 5S 1" SS316 at 450degC ===============
 
 
@@ -47,7 +59,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                    sigma_theta: -102.1835 (MPa)
                        sigma_z: -378.2248 (MPa)
                       sigma_Eq:  338.8910 (MPa)
-                          Time:  0.1126 (sec)
+                          Time:  0.1134 (sec)
 
                         HTC: 40e3 W/m^s/K                       
 
@@ -65,7 +77,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                    sigma_theta: -110.4248 (MPa)
                        sigma_z: -253.2035 (MPa)
                       sigma_Eq:  219.8765 (MPa)
-                          Time:  0.0518 (sec)
+                          Time:  0.0525 (sec)
 
 ============= NPS Sch. 5S 3/4" Inco625 at 650 degC =============
 
@@ -109,7 +121,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                    sigma_theta: -104.0399 (MPa)
                        sigma_z: -302.4280 (MPa)
                       sigma_Eq:  266.1248 (MPa)
-                          Time:  0.0507 (sec)
+                          Time:  0.0518 (sec)
 
       Generalised plane strain with annulled bending moment     
 

@@ -32,6 +32,9 @@ from numpy import ma
 import weave # version 0.17.0
 from weave import converters
 import scipy.optimize as opt # version 1.1.0
+from pint import UnitRegistry # version 0.8.1
+UR_ = UnitRegistry()
+Q_ = UR_.Quantity
 
 # Plotting:
 import matplotlib as mpl # version 2.2.3
@@ -591,7 +594,7 @@ class Solver:
             valprint('Tbar_o', Tbar_o, 'K')
             valprint('B\'\'_1', BPP, 'K')
             valprint('D\'\'_1', DPP, 'K')
-            headerprint('Stress at outside tube crown', ' ')
+            headerprint('Stress at outside tube crown:', ' ')
             valprint('sigma_r', self.sigmaR[0,-1]*1e-6, 'MPa')
             valprint('sigma_rTheta', self.sigmaRTheta[0,-1]*1e-6, 'MPa')
             valprint('sigma_theta', self.sigmaTheta[0,-1]*1e-6, 'MPa')
@@ -601,13 +604,55 @@ class Solver:
 """ __________________________ USAGE (MAIN) ___________________________ """
 
 if __name__ == "__main__":
+    iterator='inline'
 
-    """ NPS Sch. 5S 1" SS316 at 450degC """
+    headerprint(' Holms (1952), NACA-TR-1059 ')
+
+    nr=34; nt=61
+    a = 101.6/1e3      # inside tube radius [mm->m]
+    b = 304.8/1e3      # outside tube radius [mm->m]
+
+    c0 = Q_(0,'degF').to('K').magnitude
+    c1 = Q_(1000,'degF').to('K').magnitude
+    c2 = Q_(500,'degF').to('K').magnitude
+    E = Q_(17.5e6, 'psi').to('Pa').magnitude
+    valprint('E', E*1e-9, 'GPa')
+    alpha = Q_(8e-6, 'degF^-1').to('K^-1').magnitude
+    valprint('alpha', alpha*1e6, 'x1e6 K^-1')
+    
+    # Create instance of Grid and Solver to use stress post-processor:
+    g = Grid(nr=nr, nt=nt, rMin=a, rMax=b)
+    s = Solver(g, debug=True, alpha=alpha, 
+               E=E, nu=0.3, n=1)
+    s.T = (((c1-c0) * b) / (b**2 - a**2)) * \
+          ((g.r**2 - a**2) / g.r) * np.cos(g.theta) + \
+          (c2-c0) * (1 - (np.log(b / g.r) / np.log(b / a)))
+    s.postProcessing()
+
+    plotStress(g.theta, g.r, s.sigmaR,
+               s.sigmaR.min(), s.sigmaR.max(), 
+               'NACA-TR-1059_sigmaR.pdf')
+    plotStress(g.theta, g.r, s.sigmaTheta,
+               s.sigmaTheta.min(), s.sigmaTheta.max(), 
+               'NACA-TR-1059_sigmaTheta.pdf')
+    plotStress(g.theta, g.r, s.sigmaRTheta, 
+               s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
+               'NACA-TR-1059_sigmaRTheta.pdf')
+    plotStress(g.theta, g.r, s.sigmaZ, 
+               s.sigmaZ.min(), s.sigmaZ.max(), 
+               'NACA-TR-1059_sigmaZ.pdf')
+    plotStress(g.theta, g.r, s.sigmaEq, 
+               s.sigmaEq.min(), s.sigmaEq.max(),
+               'NACA-TR-1059_sigmaEq.pdf')
+
+    headerprint(' NPS Sch. 5S 1" SS316 at 450degC ')
+
+    nr=12; nt=91
     a = 30.098/2e3     # inside tube radius [mm->m]
     b = 33.4/2e3       # outside tube radius [mm->m]
 
     """ Create instance of Grid: """
-    g = Grid(nr=12, nt=91, rMin=a, rMax=b) # nr, nt -> resolution
+    g = Grid(nr=nr, nt=nt, rMin=a, rMax=b) # nr, nt -> resolution
 
     """ Create instance of LaplaceSolver: """
     s = Solver(g, debug=True, CG=0.85e6, k=20, T_int=723.15, R_f=0,
@@ -630,7 +675,7 @@ if __name__ == "__main__":
     #s.intBC = s.tubeIntFlux
     s.intBC = s.tubeIntConv
 
-    headerprint(' HTC : 10e3 W/m^s/K ')
+    headerprint(' HTC: 10e3 W/m^s/K ', ' ')
     s.h_int = 10e3
     t = time.clock(); ret = s.solve(eps=1e-6); s.postProcessing()
     valprint('Time', time.clock() - t, 'sec')
@@ -647,44 +692,43 @@ if __name__ == "__main__":
 
     plotStress(g.theta, g.r, s.sigmaR,
                s.sigmaR.min(), s.sigmaR.max(), 
-               'htc10_sigmaR.pdf')
+               'NPS5S1_316H_htc10_sigmaR.pdf')
     plotStress(g.theta, g.r, s.sigmaTheta,
                s.sigmaTheta.min(), s.sigmaTheta.max(), 
-               'htc10_sigmaTheta.pdf')
+               'NPS5S1_316H_htc10_sigmaTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaRTheta, 
                s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
-               'htc10_sigmaRTheta.pdf')
+               'NPS5S1_316H_htc10_sigmaRTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaZ, 
                s.sigmaZ.min(), s.sigmaZ.max(), 
-               'htc10_sigmaZ.pdf')
+               'NPS5S1_316H_htc10_sigmaZ.pdf')
     plotStress(g.theta, g.r, s.sigmaEq, 
                s.sigmaEq.min(), s.sigmaEq.max(),
-               'htc10_sigmaEq.pdf')
+               'NPS5S1_316H_htc10_sigmaEq.pdf')
 
-    headerprint(' HTC : 40e3 W/m^s/K ')
+    headerprint(' HTC: 40e3 W/m^s/K ', ' ')
     s.h_int = 40e3
     t = time.clock(); ret = s.solve(eps=1e-6); s.postProcessing()
     valprint('Time', time.clock() - t, 'sec')
 
     plotStress(g.theta, g.r, s.sigmaR,
                s.sigmaR.min(), s.sigmaR.max(), 
-               'htc40_sigmaR.pdf')
+               'NPS5S1_316H_htc40_sigmaR.pdf')
     plotStress(g.theta, g.r, s.sigmaTheta,
                s.sigmaTheta.min(), s.sigmaTheta.max(), 
-               'htc40_sigmaTheta.pdf')
+               'NPS5S1_316H_htc40_sigmaTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaRTheta, 
                s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
-               'htc40_sigmaRTheta.pdf')
+               'NPS5S1_316H_htc40_sigmaRTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaZ, 
                s.sigmaZ.min(), s.sigmaZ.max(), 
-               'htc40_sigmaZ.pdf')
+               'NPS5S1_316H_htc40_sigmaZ.pdf')
     plotStress(g.theta, g.r, s.sigmaEq, 
                s.sigmaEq.min(), s.sigmaEq.max(),
-               'htc40_sigmaEq.pdf')
+               'NPS5S1_316H_htc40_sigmaEq.pdf')
 
+    headerprint(' NPS Sch. 5S 3/4" Inco625 at 650 degC ')
 
-    headerprint(' ASTRI 2.0 REFERENCE CASE ')
-    headerprint('Inco625 at 650 degC', ' ')
     b = 25.4e-3/2.     # inside tube radius (mm->m)
     valprint('b', b*1e3, 'mm')
     a = b - 1.65e-3    # outside tube radius (mm->m)
@@ -701,7 +745,7 @@ if __name__ == "__main__":
     valprint('CG', CG*1e-3, 'kW/m^2')
     mdot = 0.2         # mass flow (kg/s)
     valprint('mdot', mdot, 'kg/s')
-    T_int = 887        # bulk sodium temperature (K)
+    T_int = 888        # bulk sodium temperature (K)
     
     """ Create instance of Grid: """
     g = Grid(nr=12, nt=91, rMin=a, rMax=b) # nr, nt -> resolution
@@ -726,46 +770,46 @@ if __name__ == "__main__":
     #s.h_int = HTC(True, sodium, a, b, s.k, 'velocity', 4.0)
     s.h_int = HTC(True, sodium, a, b, s.k, 'mdot', mdot)
     #s.h_int = HTC(True, sodium, a, b, s.k, 'heatCapRate', 5000)
-
+    
     ## Generalised plane strain:
     t = time.clock(); ret = s.solve(eps=1e-6)
-    headerprint('GENERALISED PLANE STRAIN', ' ')
+    headerprint('Generalised plane strain', ' ')
     s.postProcessing()
     valprint('Time', time.clock() - t, 'sec')
 
     plotStress(g.theta, g.r, s.sigmaR,
                s.sigmaR.min(), s.sigmaR.max(), 
-               'ASTRI2_GPS_sigmaR.pdf')
+               'NPS5S34_Inco625_GPS_sigmaR.pdf')
     plotStress(g.theta, g.r, s.sigmaTheta,
                s.sigmaTheta.min(), s.sigmaTheta.max(), 
-               'ASTRI2_GPS_sigmaTheta.pdf')
+               'NPS5S34_Inco625_GPS_sigmaTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaRTheta, 
                s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
-               'ASTRI2_GPS_sigmaRTheta.pdf')
+               'NPS5S34_Inco625_GPS_sigmaRTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaZ, 
                s.sigmaZ.min(), s.sigmaZ.max(), 
-               'ASTRI2_GPS_sigmaZ.pdf')
+               'NPS5S34_Inco625_GPS_sigmaZ.pdf')
     plotStress(g.theta, g.r, s.sigmaEq, 
                s.sigmaEq.min(), s.sigmaEq.max(),
-               'ASTRI2_GPS_sigmaEq.pdf')
+               'NPS5S34_Inco625_GPS_sigmaEq.pdf')
 
     ## Generalised plane strain with annulled bending:
     s.bend = True
-    headerprint('GENERALISED PLANE STRAIN WITH ANNULLED BENDING MOMENT', ' ')
+    headerprint('Generalised plane strain with annulled bending moment', ' ')
     s.postProcessing()
 
     plotStress(g.theta, g.r, s.sigmaR,
                s.sigmaR.min(), s.sigmaR.max(), 
-               'ASTRI2_GPS-AB_sigmaR.pdf')
+               'NPS5S34_Inco625_GPS-AB_sigmaR.pdf')
     plotStress(g.theta, g.r, s.sigmaTheta,
                s.sigmaTheta.min(), s.sigmaTheta.max(), 
-               'ASTRI2_GPS-AB_sigmaTheta.pdf')
+               'NPS5S34_Inco625_GPS-AB_sigmaTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaRTheta, 
                s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
-               'ASTRI2_GPS-AB_sigmaRTheta.pdf')
+               'NPS5S34_Inco625_GPS-AB_sigmaRTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaZ, 
                s.sigmaZ.min(), s.sigmaZ.max(), 
-               'ASTRI2_GPS-AB_sigmaZ.pdf')
+               'NPS5S34_Inco625_GPS-AB_sigmaZ.pdf')
     plotStress(g.theta, g.r, s.sigmaEq, 
                s.sigmaEq.min(), s.sigmaEq.max(),
-               'ASTRI2_GPS-AB_sigmaEq.pdf')
+               'NPS5S34_Inco625_GPS-AB_sigmaEq.pdf')

@@ -39,8 +39,8 @@ Q_ = UR_.Quantity
 # Plotting:
 import matplotlib as mpl # version 2.2.3
 import matplotlib.pyplot as plt
-params = {'text.latex.preamble': [r'\usepackage{mathptmx,txfonts}']}
-plt.rcParams.update(params)
+#params = {'text.latex.preamble': [r'\usepackage{mathptmx,txfonts,siunitx}']}
+#plt.rcParams.update(params)
 mpl.rc('figure.subplot', bottom=0.13, top=0.95)
 mpl.rc('figure.subplot', left=0.15, right=0.95)
 mpl.rc('xtick', labelsize='medium')
@@ -104,7 +104,7 @@ def fourierTheta(theta, a0, *c):
         ret += (c[i] * np.cos(n * theta)) + (c[i+1] * np.sin(n * theta))
     return ret
 
-def HTC(debug, thermo, a, b, k, mode, arg):
+def HTC(debug, thermo, a, b, k, correlation, mode, arg):
     """
     Inputs:
         debug : (default:False)
@@ -112,6 +112,7 @@ def HTC(debug, thermo, a, b, k, mode, arg):
         a : tube inner diameter (m)
         b : tube outer diameter (m)
         k : tube thermal conductivity (W/(m.K))
+        corrlation : 'Dittus', 'Skupinski', 'Sleicher'
         mode : 'velocity','mdot','heatCapRate' (m/s,kg/s,???)
         arg : either velocity, mass-flow or heat capacity rate
     Output:
@@ -132,22 +133,36 @@ def HTC(debug, thermo, a, b, k, mode, arg):
         hcr = arg # 
         mdot = hcr / thermo.Cp
         U = mdot / (A_d_i * thermo.rho)
-    else: sys.exit('Incorrect mode in HTC(mode, thermo, a, arg)!')
-    Re = U * d_i / thermo.nu
+    else: sys.exit('Mode: {} not recognised'.format(mode))
+    Re = U * d_i / thermo.nu # Reynolds
+    Pe = Re * thermo.Pr # Peclet
     f = pow(0.790 * np.log(Re) - 1.64, -2)
     DP_f = -f * (0.5 * thermo.rho * pow(U, 2)) \
               / d_i # kg/m/s^2 for a metre of pipe!
-    if isinstance(thermo, liquidSodium):
-        # Skupinshi, Tortel and Vautrey (Holman p318):
-        Nu = 4.82 + 0.0185 * pow(Re * thermo.Pr, 0.827)
-    else:
+    # if isinstance(thermo, liquidSodium):
+    if correlation == 'Dittus':
         # Dittus-Boelter (Holman p286):
         Nu = 0.023 * pow(Re, 0.8) * pow(thermo.Pr, 0.4)
+    elif correlation == 'Skupinski':
+        # # Skupinski, Tortel and Vautrey:
+        # # https://doi.org/10.1016/0017-9310(65)90077-3
+        Nu = 4.82 + 0.0185 * pow(Pe, 0.827)
+    elif correlation == 'Notter':
+        # Notter and Schleicher:
+        # https://doi.org/10.1016/0009-2509(72)87065-9
+        Nu = 6.3 + 0.0167 * pow(Pe, 0.85) * pow(thermo.Pr, 0.08)
+    elif correlation == 'Chen':
+        # Chen and Chiou:
+        # https://doi.org/10.1016/0017-9310(81)90167-8
+        Nu = 5.6 + 0.0165 * pow(Pe, 0.85) * pow(thermo.Pr, 0.01)
+    else: sys.exit('Correlation: {} not recognised'.format(correlation))
     h = Nu * thermo.kappa / d_i
     Bi = (t * h) / k
     if debug==True:
         valprint('U', U, 'm/s')
         valprint('mdot', mdot, 'kg/s')
+        valprint('Re', Re)
+        valprint('Pe', Pe)
         valprint('deltaP', DP_f, 'Pa/m')
         valprint('HCR', hcr, 'J/K/s')
         valprint('h_int', h, 'W/m^2/K')
@@ -365,7 +380,7 @@ class Solver:
         dTheta2R2 = self.g.dTheta2R2
         dnr = self.g.dnr
         code = """
-               #line 000 "laplacianCylinder.py"
+               #line 000 "nashTubeStress.py"
                double tmp, err, diff;
                err = 0.0;
                for (int i=1; i<nt-1; ++i) {
@@ -604,7 +619,6 @@ class Solver:
 """ __________________________ USAGE (MAIN) ___________________________ """
 
 if __name__ == "__main__":
-    iterator='inline'
 
     headerprint(' Holms (1952), NACA-TR-1059 ')
 
@@ -629,7 +643,7 @@ if __name__ == "__main__":
           (c2-c0) * (1 - (np.log(b / g.r) / np.log(b / a)))
     s.postProcessing()
 
-    headerprint('Table II, p89 -- radius vs. tangential stress', ' ')
+    headerprint('Table II, p89: radius vs. tangential stress', ' ')
     radius_inch = np.linspace(4,12,9)
     radius = Q_(radius_inch, 'inch').to('m')
     sigmaTheta = Q_(np.interp(radius, s.g.r[0,:], s.sigmaTheta[0,:]), 'Pa').to('psi')
@@ -748,18 +762,25 @@ if __name__ == "__main__":
     valprint('E', E*1e-9, 'GPa')
     nu = 0.31          # Poisson
     valprint('nu', nu)
-    CG = 7.5e5        # absorbed flux (W/m^2)
+    CG = 7.27e5        # absorbed flux (W/m^2)
     valprint('CG', CG*1e-3, 'kW/m^2')
-    mdot = 0.2         # mass flow (kg/s)
+    mdot = 0.178       # mass flow (kg/s)
     valprint('mdot', mdot, 'kg/s')
     T_int = 888        # bulk sodium temperature (K)
-    
+    sodium = liquidSodium(True); sodium.update(T_int)
+    #h_int = HTC(True, sodium, a, b, k, 'Skupinski', 'velocity', 4.0)
+    #h_int = HTC(True, sodium, a, b, k, 'Skupinski', 'heatCapRate', 5000)
+    #h_int = HTC(True, sodium, a, b, k, 'Skupinski', 'mdot', mdot)
+    #h_int = HTC(True, sodium, a, b, k, 'Notter', 'mdot', mdot)
+    h_int = HTC(True, sodium, a, b, k, 'Chen', 'mdot', mdot)
+
     """ Create instance of Grid: """
-    g = Grid(nr=12, nt=91, rMin=a, rMax=b) # nr, nt -> resolution
+    nr = 12; nt = 46
+    g = Grid(nr=nr, nt=nt, rMin=a, rMax=b) # nr, nt -> resolution
 
     """ Create instance of LaplaceSolver: """
     s = Solver(g, debug=True, CG=CG, k=k, T_int=T_int, R_f=0,
-               P_i=0e5, alpha=alpha, E=E, nu=nu, n=1,
+               h_int=h_int, P_i=0e5, alpha=alpha, E=E, nu=nu, n=1,
                bend=False)
 
     """ External BC: """
@@ -773,10 +794,6 @@ if __name__ == "__main__":
     #s.intBC = s.tubeIntTemp
     #s.intBC = s.tubeIntFlux
     s.intBC = s.tubeIntConv
-    sodium = liquidSodium(True); sodium.update(T_int)
-    #s.h_int = HTC(True, sodium, a, b, s.k, 'velocity', 4.0)
-    s.h_int = HTC(True, sodium, a, b, s.k, 'mdot', mdot)
-    #s.h_int = HTC(True, sodium, a, b, s.k, 'heatCapRate', 5000)
     
     ## Generalised plane strain:
     t = time.clock(); ret = s.solve(eps=1e-6)
@@ -820,3 +837,38 @@ if __name__ == "__main__":
     plotStress(g.theta, g.r, s.sigmaEq, 
                s.sigmaEq.min(), s.sigmaEq.max(),
                'NPS5S34_Inco625_GPS-AB_sigmaEq.pdf')
+
+    ## Sensitivity of heat transfer coefficient and max stress to mass-flow
+    s.bend = False
+    s.debug = False
+    mdot = np.linspace(0.1, 1.2)
+    h_int = np.zeros(len(mdot))
+    sig_eq = np.zeros(len(h_int))
+    for i, m in enumerate(mdot):
+        #h_int[i] = HTC(False, sodium, a, b, k, 'Skupinski', 'mdot', m)
+        #h_int[i] = HTC(False, sodium, a, b, k, 'Notter', 'mdot', m)
+        h_int[i] = HTC(False, sodium, a, b, k, 'Chen', 'mdot', m)
+        s.h_int = h_int[i]
+        ret = s.solve(eps=1e-6)
+        s.postProcessing()
+        sig_eq[i] = s.sigmaEq[0,-1]
+    ## plot of mdot vs internal convection coefficient
+    fig = plt.figure(figsize=(3.5, 3.5))
+    ax = fig.add_subplot(111)
+    ax.plot(mdot, h_int*1e-3, '-')
+    ax.set_xlabel(r'$\dot{m}$ (\si{\kilo\gram\per\second})')
+    ax.set_ylabel(r'$h_\mathrm{int}$ (\si{\kilo\watt\per\meter\squared\per\kelvin})')
+    fig.tight_layout()
+    fig.savefig('NPS5S34_Inco625_mdot-intConv.pdf')
+    fig.savefig('NPS5S34_Inco625_mdot-intConv.png', dpi=150)
+    plt.close(fig)
+    ## plot of mdot vs maximum equivalent stress
+    fig = plt.figure(figsize=(3.5, 3.5))
+    ax = fig.add_subplot(111)
+    ax.plot(mdot, sig_eq*1e-6, '-')
+    ax.set_xlabel(r'$\dot{m}$ (\si{\kilo\gram\per\second})')
+    ax.set_ylabel(r'$\max(\sigma_\mathrm{Eq})$ (MPa)')
+    fig.tight_layout()
+    fig.savefig('NPS5S34_Inco625_mdot-sigmaEq.pdf')
+    fig.savefig('NPS5S34_Inco625_mdot-sigmaEq.png', dpi=150)
+    plt.close(fig)

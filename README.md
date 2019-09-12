@@ -6,8 +6,7 @@ As described in journal paper:
 ### Thermoelastic stress in concentrating solar receiver tubes: A retrospect on stress analysis methodology, and comparison of salt and sodium
 Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
 
-### Test output:
-
+### Holms1952()
 <code>
 ================== Holms (1952), NACA-TR-1059 ==================
 
@@ -39,7 +38,10 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                     10.0 (in.): -32920.4657 (psi)
                     11.0 (in.): -43538.4796 (psi)
                     12.0 (in.): -53011.9613 (psi)
+</code>
 
+### SE6413()
+<code>
 ================ NPS Sch. 5S 1" SS316 at 450degC ===============
 
 
@@ -78,17 +80,20 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                        sigma_z: -253.2035 (MPa)
                       sigma_Eq:  219.8765 (MPa)
                           Time:  0.0517 (sec)
+</code>
 
+### ASTRI2()
+<code>
 ============= NPS Sch. 5S 3/4" Inco625 at 650 degC =============
 
                              b:  12.7000 (mm)
                              a:  11.0500 (mm)
-                             k:  19.1500 (kg*m/s^3/K)
-                         alpha:  18.1500 (x1e6 K^-1)
-                             E:  168.0000 (GPa)
+                             k:  19.1000 (kg*m/s^3/K)
+                         alpha:  18.2000 (x1e6 K^-1)
+                             E:  169.0000 (GPa)
                             nu:  0.3100 (-)
-                            CG:  727.0000 (kW/m^2)
-                          mdot:  0.1780 (kg/s)
+                            CG:  750.0000 (kW/m^2)
+                          mdot:  0.1000 (kg/s)
 
                           Liquid Sodium                         
 
@@ -98,47 +103,47 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                             mu:  203.3446 (x1e6 kg/m/s)
                          kappa:  58.8628 (kg*m/s^3/K)
                             Pr:  0.0043 (-)
-                             U:  0.5746 (m/s)
-                          mdot:  0.1780 (kg/s)
-                            Re:  50431.8900 (-)
-                            Pe:  218.2441 (-)
-                        deltaP: -126.1662 (Pa/m)
-                           HCR:  222.9797 (J/K/s)
-                         h_int:  18964.8995 (W/m^2/K)
-                            Bi:  1.6341 (-)
+                             U:  0.3228 (m/s)
+                          mdot:  0.1000 (kg/s)
+                            Re:  28332.5225 (-)
+                            Pe:  122.6091 (-)
+                        deltaP: -45.6350 (Pa/m)
+                           HCR:  125.2695 (J/K/s)
+                         h_int:  17395.9490 (W/m^2/K)
+                            Bi:  1.5028 (-)
 
                     Generalised plane strain                    
 
-                        Tbar_i:  901.9304 (K)
-                          B'_1:  21.1564 (K)
+                        Tbar_i:  903.7004 (K)
+                          B'_1:  23.8937 (K)
                           D'_1: -0.0000 (K)
-                        Tbar_o:  923.2930 (K)
-                         B''_1:  53.8806 (K)
+                        Tbar_o:  925.7961 (K)
+                         B''_1:  57.8371 (K)
                          D''_1: -0.0000 (K)
 
                   Stress at outside tube crown:                 
 
                        sigma_r:  0.0000 (MPa)
                   sigma_rTheta: -0.0000 (MPa)
-                   sigma_theta: -101.3078 (MPa)
-                       sigma_z: -285.9554 (MPa)
-                      sigma_Eq:  251.1259 (MPa)
-                          Time:  0.0334 (sec)
+                   sigma_theta: -105.3066 (MPa)
+                       sigma_z: -306.6446 (MPa)
+                      sigma_Eq:  269.8679 (MPa)
+                          Time:  0.0948 (sec)
 
       Generalised plane strain with annulled bending moment     
 
-                        Tbar_i:  901.9304 (K)
-                          B'_1:  21.1564 (K)
+                        Tbar_i:  903.7004 (K)
+                          B'_1:  23.8937 (K)
                           D'_1: -0.0000 (K)
-                        Tbar_o:  923.2930 (K)
-                         B''_1:  53.8806 (K)
+                        Tbar_o:  925.7961 (K)
+                         B''_1:  57.8371 (K)
                          D''_1: -0.0000 (K)
 
                   Stress at outside tube crown:                 
 
                        sigma_r:  0.0000 (MPa)
                   sigma_rTheta: -0.0000 (MPa)
-                   sigma_theta: -101.3078 (MPa)
-                       sigma_z: -160.5045 (MPa)
-                      sigma_Eq:  140.5867 (MPa)
+                   sigma_theta: -105.3066 (MPa)
+                       sigma_z: -169.0042 (MPa)
+                      sigma_Eq:  147.8331 (MPa)
 </code>

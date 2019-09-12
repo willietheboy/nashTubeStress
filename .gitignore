@@ -5,3 +5,6 @@
 
 # Include documentation
 !doc.pdf
+
+# Python compiled
+*.pyc

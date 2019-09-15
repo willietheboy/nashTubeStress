@@ -43,13 +43,13 @@ import matplotlib.pyplot as plt
 #plt.rcParams.update(params)
 mpl.rc('figure.subplot', bottom=0.13, top=0.95)
 mpl.rc('figure.subplot', left=0.15, right=0.95)
-mpl.rc('xtick', labelsize='medium')
-mpl.rc('ytick', labelsize='medium')
-mpl.rc('axes', labelsize='large')
-mpl.rc('axes', titlesize='large')
-mpl.rc('legend', fontsize='medium')
-mpl.rc('lines', markersize=4)
-mpl.rc('lines', linewidth=0.5)
+# mpl.rc('xtick', labelsize='medium')
+# mpl.rc('ytick', labelsize='medium')
+# mpl.rc('axes', labelsize='large')
+# mpl.rc('axes', titlesize='large')
+# mpl.rc('legend', fontsize='medium')
+# mpl.rc('lines', markersize=4)
+# mpl.rc('lines', linewidth=0.5)
 from matplotlib import colors, ticker, cm
 from matplotlib.transforms import Affine2D
 from matplotlib.lines import Line2D
@@ -574,6 +574,23 @@ def fourierTheta(theta, a0, *c):
         ret += (c[i] * np.cos(n * theta)) + (c[i+1] * np.sin(n * theta))
     return ret
 
+def headerprint(string, mychar='='):
+    """ Prints a centered string to divide output sections. """
+    mywidth = 64
+    numspaces = mywidth - len(string)
+    before = int(ceil(float(mywidth-len(string))/2))
+    after  = int(floor(float(mywidth-len(string))/2))
+    print("\n"+before*mychar+string+after*mychar+"\n")
+
+def valprint(string, value, unit='-'):
+    """ Ensure uniform formatting of scalar value outputs. """
+    print("{0:>30}: {1: .4f} ({2})".format(string, value, unit))
+
+def matprint(string, value):
+    """ Ensure uniform formatting of matrix value outputs. """
+    print("{0}:".format(string))
+    print(value)
+
 def HTC(debug, thermo, a, b, k, correlation, mode, arg):
     """
     Inputs:
@@ -639,22 +656,32 @@ def HTC(debug, thermo, a, b, k, correlation, mode, arg):
         valprint('Bi', Bi)
     return h
 
-def headerprint(string, mychar='='):
-    """ Prints a centered string to divide output sections. """
-    mywidth = 64
-    numspaces = mywidth - len(string)
-    before = int(ceil(float(mywidth-len(string))/2))
-    after  = int(floor(float(mywidth-len(string))/2))
-    print("\n"+before*mychar+string+after*mychar+"\n")
+def findFlux(flux, s, f, i, point):
+    """ 
+    Helper for finding optimum flux for certain stress condition
+    """
+    s.CG = flux
 
-def valprint(string, value, unit='-'):
-    """ Ensure uniform formatting of scalar value outputs. """
-    print("{0:>30}: {1: .4f} ({2})".format(string, value, unit))
+    ret = s.solve(eps=1e-6)
+    s.postProcessing()
 
-def matprint(string, value):
-    """ Ensure uniform formatting of matrix value outputs. """
-    print("{0}:".format(string))
-    print(value)
+    if point=='max':
+        # T_max|sigmaEqMax:
+        sigmaEqMax = np.interp(np.max(s.T), f[:,0], f[:,i])
+        return sigmaEqMax - np.max(s.sigmaEq)
+    elif point=='inside':
+        # T_i:
+        sigmaEqMax = np.interp(s.T[0,0], f[:,0], f[:,i])
+        return sigmaEqMax - s.sigmaEq[0,0]
+    elif point=='outside':
+        # T_o
+        sigmaEqMax = np.interp(s.T[0,-1], f[:,0], f[:,i])
+        return sigmaEqMax - s.sigmaEq[0,-1]
+    elif point=='membrane':
+        # Assuming shakedown has occured (membrane stress remains):
+        sigmaEqMax = np.interp(np.average(s.T[0,:]), f[:,0], f[:,i])
+        return sigmaEqMax - np.average(s.sigmaEq[0,:])
+    else: sys.exit('Variable point {} not recognised'.format(point))
 
 ################################### ROUTINES ###################################
 
@@ -664,7 +691,7 @@ def SE6413():
     https://doi.org/10.1016/j.solener.2017.12.003
     """
     
-    headerprint(' NPS Sch. 5S 1" SS316 at 450degC ')
+    headerprint(' NPS Sch. 5S 1" S31609 at 450degC ')
 
     nr=12; nt=91
     a = 30.098/2e3     # inside tube radius [mm->m]
@@ -711,19 +738,19 @@ def SE6413():
 
     plotStress(g.theta, g.r, s.sigmaR,
                s.sigmaR.min(), s.sigmaR.max(), 
-               'NPS5S1_316H_htc10_sigmaR.pdf')
+               'NPS5S1_S31609_htc10_sigmaR.pdf')
     plotStress(g.theta, g.r, s.sigmaTheta,
                s.sigmaTheta.min(), s.sigmaTheta.max(), 
-               'NPS5S1_316H_htc10_sigmaTheta.pdf')
+               'NPS5S1_S31609_htc10_sigmaTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaRTheta, 
                s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
-               'NPS5S1_316H_htc10_sigmaRTheta.pdf')
+               'NPS5S1_S31609_htc10_sigmaRTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaZ, 
                s.sigmaZ.min(), s.sigmaZ.max(), 
-               'NPS5S1_316H_htc10_sigmaZ.pdf')
+               'NPS5S1_S31609_htc10_sigmaZ.pdf')
     plotStress(g.theta, g.r, s.sigmaEq, 
                s.sigmaEq.min(), s.sigmaEq.max(),
-               'NPS5S1_316H_htc10_sigmaEq.pdf')
+               'NPS5S1_S31609_htc10_sigmaEq.pdf')
 
     headerprint(' HTC: 40e3 W/m^s/K ', ' ')
     s.h_int = 40e3
@@ -732,19 +759,19 @@ def SE6413():
 
     plotStress(g.theta, g.r, s.sigmaR,
                s.sigmaR.min(), s.sigmaR.max(), 
-               'NPS5S1_316H_htc40_sigmaR.pdf')
+               'NPS5S1_S31609_htc40_sigmaR.pdf')
     plotStress(g.theta, g.r, s.sigmaTheta,
                s.sigmaTheta.min(), s.sigmaTheta.max(), 
-               'NPS5S1_316H_htc40_sigmaTheta.pdf')
+               'NPS5S1_S31609_htc40_sigmaTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaRTheta, 
                s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
-               'NPS5S1_316H_htc40_sigmaRTheta.pdf')
+               'NPS5S1_S31609_htc40_sigmaRTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaZ, 
                s.sigmaZ.min(), s.sigmaZ.max(), 
-               'NPS5S1_316H_htc40_sigmaZ.pdf')
+               'NPS5S1_S31609_htc40_sigmaZ.pdf')
     plotStress(g.theta, g.r, s.sigmaEq, 
                s.sigmaEq.min(), s.sigmaEq.max(),
-               'NPS5S1_316H_htc40_sigmaEq.pdf')
+               'NPS5S1_S31609_htc40_sigmaEq.pdf')
 
 def Holms1952():
     """
@@ -801,9 +828,9 @@ def Holms1952():
 
 def ASTRI2():
     """
-    Peak flux reference point in advanced CSP prototypes using Inco625
+    Peak flux reference point in advanced CSP prototypes using N06625
     """
-    headerprint(' NPS Sch. 5S 3/4" Inco625 at 650 degC ')
+    headerprint(' NPS Sch. 5S 3/4" N06625 at 650 degC ')
 
     ## Material constants
     b = 25.4e-3/2.     # inside tube radius (mm->m)
@@ -861,32 +888,32 @@ def ASTRI2():
 
     plotStress(g.theta, g.r, s.sigmaR,
                s.sigmaR.min(), s.sigmaR.max(), 
-               'NPS5S34_Inco625_GPS_sigmaR.pdf')
+               'NPS5S34_N06625_GPS_sigmaR.pdf')
     plotStress(g.theta, g.r, s.sigmaTheta,
                s.sigmaTheta.min(), s.sigmaTheta.max(), 
-               'NPS5S34_Inco625_GPS_sigmaTheta.pdf')
+               'NPS5S34_N06625_GPS_sigmaTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaRTheta, 
                s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
-               'NPS5S34_Inco625_GPS_sigmaRTheta.pdf')
+               'NPS5S34_N06625_GPS_sigmaRTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaZ, 
                s.sigmaZ.min(), s.sigmaZ.max(), 
-               'NPS5S34_Inco625_GPS_sigmaZ.pdf')
+               'NPS5S34_N06625_GPS_sigmaZ.pdf')
     plotStress(g.theta, g.r, s.sigmaEq, 
                s.sigmaEq.min(), s.sigmaEq.max(),
-               'NPS5S34_Inco625_GPS_sigmaEq.pdf')
+               'NPS5S34_N06625_GPS_sigmaEq.pdf')
 
     # Comparison with FEA -- code_aster MECA_STATIQUE [U4.51.01]:
     fc = [None]*4
     for i, theta in enumerate([0, 60, 120, 180]):
-        fn = 'NPS5S34_Inco625_theta{}_TSOD615_HTCSOD17394_FLUX750.dat'.format(theta) 
+        fn = 'NPS5S34_N06625_theta{}_TSOD615_HTCSOD17394_FLUX750.dat'.format(theta) 
         fc[i] = np.genfromtxt('aster/'+fn, skip_header=5)
-    plotFEA(g.r, s.sigmaTheta, fc, 4, 'NPS5S34_Inco625_FEA-GPS_sigmaTheta.pdf',
+    plotFEA(g.r, s.sigmaTheta, fc, 4, 'NPS5S34_N06625_FEA-GPS_sigmaTheta.pdf',
             'best', r'$\sigma_\theta$')
-    plotFEA(g.r, s.sigmaR, fc, 5, 'NPS5S34_Inco625_FEA-GPS_sigmaR.pdf',
+    plotFEA(g.r, s.sigmaR, fc, 5, 'NPS5S34_N06625_FEA-GPS_sigmaR.pdf',
             'best', r'$\sigma_r$')
-    plotFEA(g.r, s.sigmaZ, fc, 6, 'NPS5S34_Inco625_FEA-GPS_sigmaZ.pdf',
+    plotFEA(g.r, s.sigmaZ, fc, 6, 'NPS5S34_N06625_FEA-GPS_sigmaZ.pdf',
             'best', r'$\sigma_z$')
-    plotFEA(g.r, s.sigmaRTheta, fc, 7, 'NPS5S34_Inco625_FEA-GPS_sigmaRTheta.pdf',
+    plotFEA(g.r, s.sigmaRTheta, fc, 7, 'NPS5S34_N06625_FEA-GPS_sigmaRTheta.pdf',
             'best', r'$\sigma_{r\theta}$')
 
     ## Generalised plane strain with annulled bending:
@@ -896,19 +923,19 @@ def ASTRI2():
 
     plotStress(g.theta, g.r, s.sigmaR,
                s.sigmaR.min(), s.sigmaR.max(), 
-               'NPS5S34_Inco625_GPS-AB_sigmaR.pdf')
+               'NPS5S34_N06625_GPS-AB_sigmaR.pdf')
     plotStress(g.theta, g.r, s.sigmaTheta,
                s.sigmaTheta.min(), s.sigmaTheta.max(), 
-               'NPS5S34_Inco625_GPS-AB_sigmaTheta.pdf')
+               'NPS5S34_N06625_GPS-AB_sigmaTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaRTheta, 
                s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
-               'NPS5S34_Inco625_GPS-AB_sigmaRTheta.pdf')
+               'NPS5S34_N06625_GPS-AB_sigmaRTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaZ, 
                s.sigmaZ.min(), s.sigmaZ.max(), 
-               'NPS5S34_Inco625_GPS-AB_sigmaZ.pdf')
+               'NPS5S34_N06625_GPS-AB_sigmaZ.pdf')
     plotStress(g.theta, g.r, s.sigmaEq, 
                s.sigmaEq.min(), s.sigmaEq.max(),
-               'NPS5S34_Inco625_GPS-AB_sigmaEq.pdf')
+               'NPS5S34_N06625_GPS-AB_sigmaEq.pdf')
 
     ## Sensitivity of heat transfer coefficient and peak stress to mass-flow
     s.bend = False
@@ -931,8 +958,8 @@ def ASTRI2():
     ax.set_xlabel(r'$\dot{m}$ (\si{\kilo\gram\per\second})')
     ax.set_ylabel(r'$h_\mathrm{int}$ (\si{\kilo\watt\per\meter\squared\per\kelvin})')
     fig.tight_layout()
-    fig.savefig('NPS5S34_Inco625_mdot-intConv.pdf')
-    #fig.savefig('NPS5S34_Inco625_mdot-intConv.png', dpi=150)
+    fig.savefig('NPS5S34_N06625_mdot-intConv.pdf')
+    #fig.savefig('NPS5S34_N06625_mdot-intConv.png', dpi=150)
     plt.close(fig)
     ## plot of mdot vs maximum equivalent stress
     fig = plt.figure(figsize=(3.5, 3.5))
@@ -941,9 +968,59 @@ def ASTRI2():
     ax.set_xlabel(r'$\dot{m}$ (\si{\kilo\gram\per\second})')
     ax.set_ylabel(r'$\max(\sigma_\mathrm{Eq})$ (MPa)')
     fig.tight_layout()
-    fig.savefig('NPS5S34_Inco625_mdot-sigmaEq.pdf')
-    #fig.savefig('NPS5S34_Inco625_mdot-sigmaEq.png', dpi=150)
+    fig.savefig('NPS5S34_N06625_mdot-sigmaEq.pdf')
+    #fig.savefig('NPS5S34_N06625_mdot-sigmaEq.png', dpi=150)
     plt.close(fig)
+
+    headerprint('Determining peak flux...', ' ')
+    mdot = 0.1         # mass flow (kg/s)
+    s.debug = False
+    sodium.debug = False
+    fv = np.genfromtxt('mats/N06625_f-values.dat', delimiter=',')
+    fv[:,0] += 273.15 # degC to K
+    fv[:,1:] *= 3e6 # apply 3f criteria and convert MPa->Pa
+    T_int = np.linspace(50, 750, 15)+273.15
+    T_met = np.zeros([len(T_int), 3])
+    peakFlux = np.zeros([len(T_int), 3])
+    t = time.clock()
+    for i in xrange(len(T_int)):
+        s.T_int = T_int[i]
+        sodium.update(T_int[i])
+        s.h_int = HTC(False, sodium, a, b, k, 'Chen', 'mdot', mdot)
+        for j in range(3):
+            peakFlux[i, j] = opt.newton(
+                findFlux, 1e5,
+                args=(s, fv, j+1, 'outside'),
+                maxiter=100, tol=1e-2
+            )
+            T_met[i, j] = np.max(s.T)
+    valprint('Time', time.clock() - t, 'sec')
+    
+    fig = plt.figure(figsize=(3.5, 3.5))    
+    ax = fig.add_subplot(111)
+    ax.plot(T_int-273.15,peakFlux[:,0]*1e-6, label=r'$f$ \textsc{in} \SI{100}{\hour}')
+    ax.plot(T_int-273.15,peakFlux[:,1]*1e-6, label=r'$f$ \textsc{in} \SI{1000}{\hour}')
+    ax.plot(T_int-273.15,peakFlux[:,2]*1e-6, label=r'$f$ \textsc{in} \SI{10000}{\hour}')
+    ax.set_xlabel(r'\textsc{Sodium temperature}, $T_\mathrm{bulk}$ (\si{\celsius})')
+    ax.set_ylabel(r'\textsc{Peak Flux}, (\si{\mega\watt\per\meter\squared})')
+    ax.legend(loc='best')
+    fig.tight_layout()
+    fig.savefig('NPS5S34_N06625_peakFlux.pdf')
+    fig.savefig('NPS5S34_N06625_peakFlux.png', dpi=150)
+    plt.close(fig)
+
+    csv = np.zeros([len(T_int), 7])
+    csv[:,0] = T_int
+    csv[:,1] = T_met[:,0]
+    csv[:,2] = peakFlux[:,0]
+    csv[:,3] = T_met[:,1]
+    csv[:,4] = peakFlux[:,1]
+    csv[:,5] = T_met[:,2]
+    csv[:,6] = peakFlux[:,2]
+    np.savetxt('NPS5S34_N06625_peakFlux.csv', csv, delimiter=',',
+               header='T_int(K),T_metal@q_1e2(K),q_1e2(MPa),'+\
+               'T_metal@q__1e3(K),q_1e3(MPa),T_metal@q__1e4(K),q_1e4(MPa)')
+
 
 ##################################### MAIN #####################################
 

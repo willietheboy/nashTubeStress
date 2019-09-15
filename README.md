@@ -84,7 +84,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
 
 ### ASTRI2()
 <code>
-============= NPS Sch. 5S 3/4" Inco625 at 650 degC =============
+============== NPS Sch. 5S 3/4" N06625 at 650 degC =============
 
                              b:  12.7000 (mm)
                              a:  11.0500 (mm)
@@ -128,7 +128,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                    sigma_theta: -105.3066 (MPa)
                        sigma_z: -306.6446 (MPa)
                       sigma_Eq:  269.8679 (MPa)
-                          Time:  0.0948 (sec)
+                          Time:  0.0944 (sec)
 
       Generalised plane strain with annulled bending moment     
 
@@ -146,4 +146,8 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                    sigma_theta: -105.3066 (MPa)
                        sigma_z: -169.0042 (MPa)
                       sigma_Eq:  147.8331 (MPa)
+
+                    Determining peak flux...                    
+
+                          Time:  21.4738 (sec)
 </code>

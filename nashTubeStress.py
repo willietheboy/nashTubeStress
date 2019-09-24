@@ -847,7 +847,7 @@ def ASTRI2():
     valprint('nu', nu)
 
     ## Thermal constants
-    CG = 7.50e5        # absorbed flux (W/m^2)
+    CG = 7.5e5         # absorbed flux (W/m^2)
     valprint('CG', CG*1e-3, 'kW/m^2')
     mdot = 0.1         # mass flow (kg/s)
     valprint('mdot', mdot, 'kg/s')
@@ -906,7 +906,7 @@ def ASTRI2():
     fc = [None]*4
     for i, theta in enumerate([0, 60, 120, 180]):
         fn = 'NPS5S34_N06625_theta{}_TSOD615_HTCSOD17394_FLUX750.dat'.format(theta) 
-        fc[i] = np.genfromtxt('aster/'+fn, skip_header=5)
+        fc[i] = np.genfromtxt(os.path.join('aster', fn), skip_header=5)
     plotFEA(g.r, s.sigmaTheta, fc, 4, 'NPS5S34_N06625_FEA-GPS_sigmaTheta.pdf',
             'best', r'$\sigma_\theta$')
     plotFEA(g.r, s.sigmaR, fc, 5, 'NPS5S34_N06625_FEA-GPS_sigmaR.pdf',
@@ -976,18 +976,19 @@ def ASTRI2():
     mdot = 0.1         # mass flow (kg/s)
     s.debug = False
     sodium.debug = False
-    fv = np.genfromtxt('mats/N06625_f-values.dat', delimiter=',')
+    fv = np.genfromtxt(os.path.join('mats', 'N06625_f-values.dat'), delimiter=',')
     fv[:,0] += 273.15 # degC to K
     fv[:,1:] *= 3e6 # apply 3f criteria and convert MPa->Pa
-    T_int = np.linspace(50, 750, 15)+273.15
-    T_met = np.zeros([len(T_int), 3])
-    peakFlux = np.zeros([len(T_int), 3])
+    nfv = 5 # f in 1e2, 1e3, 1e4 and 1e5 hours, as well as ASME S_m
+    T_int = np.linspace(500, 750, 11)+273.15
+    T_met = np.zeros([len(T_int), nfv])
+    peakFlux = np.zeros([len(T_int), nfv])
     t = time.clock()
     for i in xrange(len(T_int)):
         s.T_int = T_int[i]
         sodium.update(T_int[i])
         s.h_int = HTC(False, sodium, a, b, k, 'Chen', 'mdot', mdot)
-        for j in range(3):
+        for j in range(nfv):
             peakFlux[i, j] = opt.newton(
                 findFlux, 1e5,
                 args=(s, fv, j+1, 'outside'),
@@ -1001,6 +1002,8 @@ def ASTRI2():
     ax.plot(T_int-273.15,peakFlux[:,0]*1e-6, label=r'$f$ \textsc{in} \SI{100}{\hour}')
     ax.plot(T_int-273.15,peakFlux[:,1]*1e-6, label=r'$f$ \textsc{in} \SI{1000}{\hour}')
     ax.plot(T_int-273.15,peakFlux[:,2]*1e-6, label=r'$f$ \textsc{in} \SI{10000}{\hour}')
+    ax.plot(T_int-273.15,peakFlux[:,3]*1e-6, label=r'$f$ \textsc{in} \SI{100000}{\hour}')
+    ax.plot(T_int-273.15,peakFlux[:,4]*1e-6, label=r'$S_\mathrm{m}$')
     ax.set_xlabel(r'\textsc{Sodium temperature}, $T_\mathrm{bulk}$ (\si{\celsius})')
     ax.set_ylabel(r'\textsc{Peak Flux}, (\si{\mega\watt\per\meter\squared})')
     ax.legend(loc='best')
@@ -1009,7 +1012,8 @@ def ASTRI2():
     fig.savefig('NPS5S34_N06625_peakFlux.png', dpi=150)
     plt.close(fig)
 
-    csv = np.zeros([len(T_int), 7])
+    ## Dump peak flux results to CSV file:
+    csv = np.zeros([len(T_int), 11])
     csv[:,0] = T_int
     csv[:,1] = T_met[:,0]
     csv[:,2] = peakFlux[:,0]
@@ -1017,9 +1021,16 @@ def ASTRI2():
     csv[:,4] = peakFlux[:,1]
     csv[:,5] = T_met[:,2]
     csv[:,6] = peakFlux[:,2]
+    csv[:,7] = T_met[:,3]
+    csv[:,8] = peakFlux[:,3]
+    csv[:,9] = T_met[:,4]
+    csv[:,10] = peakFlux[:,4]
     np.savetxt('NPS5S34_N06625_peakFlux.csv', csv, delimiter=',',
-               header='T_int(K),T_metal@q_1e2(K),q_1e2(MPa),'+\
-               'T_metal@q__1e3(K),q_1e3(MPa),T_metal@q__1e4(K),q_1e4(MPa)')
+               header='T_int(K),T_metal@3f_in_1e2h(K),q_in_1e2h(MPa),'+\
+               'T_metal@3f_in_1e3h(K),q_in_1e3h(MPa),'+\
+               'T_metal@3f_in_1e4h(K),q_in_1e4h(MPa),'+\
+               'T_metal@3f_in_1e5h(K),q_in_1e5h(MPa),'+\
+               'T_metal@3Sm(K),q_in_Sm(MPa)')
 
 
 ##################################### MAIN #####################################

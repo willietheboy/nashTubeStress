@@ -149,5 +149,5 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
 
                     Determining peak flux...                    
 
-                          Time:  21.4738 (sec)
+                          Time:  27.7873 (sec)
 </code>

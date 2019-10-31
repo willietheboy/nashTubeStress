@@ -902,19 +902,28 @@ def ASTRI2():
                s.sigmaEq.min(), s.sigmaEq.max(),
                'NPS5S34_N06625_GPS_sigmaEq.pdf')
 
-    # Comparison with FEA -- code_aster MECA_STATIQUE [U4.51.01]:
-    fc = [None]*4
+    # Comparison with FEA -- code_aster 13.6 MECA_STATIQUE [U4.51.01]:
+    fea = [None]*4
+    mesh = 'FINE' ## radial discretisation of FEA: 'COURSE|FINE'
     for i, theta in enumerate([0, 60, 120, 180]):
-        fn = 'NPS5S34_N06625_theta{}_TSOD615_HTCSOD17394_FLUX750.dat'.format(theta) 
-        fc[i] = np.genfromtxt(os.path.join('aster', fn), skip_header=5)
-    plotFEA(g.r, s.sigmaTheta, fc, 4, 'NPS5S34_N06625_FEA-GPS_sigmaTheta.pdf',
+        fn = mesh + '_NPS5S34_N06625_theta{}'.format(theta) + \
+             '_TSOD615_HTCSOD17394_FLUX750.dat'
+        fc = np.genfromtxt(os.path.join('aster', fn), skip_header=5)
+        seq = np.sqrt(0.5 * ((fc[:,5] - fc[:,4])**2 + \
+                            (fc[:,4] - fc[:,6])**2 + \
+                            (fc[:,6] - fc[:,5])**2) + \
+                     6 * (fc[:,7]**2))
+        fea[i] = np.c_[fc, seq]
+    plotFEA(g.r, s.sigmaTheta, fea, 4, 'NPS5S34_N06625_FEA-GPS_sigmaTheta.pdf',
             'best', r'$\sigma_\theta$')
-    plotFEA(g.r, s.sigmaR, fc, 5, 'NPS5S34_N06625_FEA-GPS_sigmaR.pdf',
+    plotFEA(g.r, s.sigmaR, fea, 5, 'NPS5S34_N06625_FEA-GPS_sigmaR.pdf',
             'best', r'$\sigma_r$')
-    plotFEA(g.r, s.sigmaZ, fc, 6, 'NPS5S34_N06625_FEA-GPS_sigmaZ.pdf',
+    plotFEA(g.r, s.sigmaZ, fea, 6, 'NPS5S34_N06625_FEA-GPS_sigmaZ.pdf',
             'best', r'$\sigma_z$')
-    plotFEA(g.r, s.sigmaRTheta, fc, 7, 'NPS5S34_N06625_FEA-GPS_sigmaRTheta.pdf',
+    plotFEA(g.r, s.sigmaRTheta, fea, 7, 'NPS5S34_N06625_FEA-GPS_sigmaRTheta.pdf',
             'best', r'$\sigma_{r\theta}$')
+    plotFEA(g.r, s.sigmaEq, fea, 8, 'NPS5S34_N06625_FEA-GPS_sigmaEq.pdf',
+            'best', r'$\sigma_{\mathrm{Eq}}$')
 
     ## Generalised plane strain with annulled bending:
     s.bend = True
@@ -972,65 +981,60 @@ def ASTRI2():
     #fig.savefig('NPS5S34_N06625_mdot-sigmaEq.png', dpi=150)
     plt.close(fig)
 
-    headerprint('Determining peak flux...', ' ')
-    mdot = 0.1         # mass flow (kg/s)
-    s.debug = False
-    sodium.debug = False
-    fv = np.genfromtxt(os.path.join('mats', 'N06625_f-values.dat'), delimiter=',')
-    fv[:,0] += 273.15 # degC to K
-    fv[:,1:] *= 3e6 # apply 3f criteria and convert MPa->Pa
-    nfv = 5 # f in 1e2, 1e3, 1e4 and 1e5 hours, as well as ASME S_m
-    T_int = np.linspace(500, 750, 11)+273.15
-    T_met = np.zeros([len(T_int), nfv])
-    peakFlux = np.zeros([len(T_int), nfv])
-    t = time.clock()
-    for i in xrange(len(T_int)):
-        s.T_int = T_int[i]
-        sodium.update(T_int[i])
-        s.h_int = HTC(False, sodium, a, b, k, 'Chen', 'mdot', mdot)
-        for j in range(nfv):
-            peakFlux[i, j] = opt.newton(
-                findFlux, 1e5,
-                args=(s, fv, j+1, 'outside'),
-                maxiter=100, tol=1e-2
-            )
-            T_met[i, j] = np.max(s.T)
-    valprint('Time', time.clock() - t, 'sec')
+    # headerprint('Determining peak flux...', ' ')
+    # mdot = 0.1         # mass flow (kg/s)
+    # s.debug = False
+    # sodium.debug = False
+    # fv = np.genfromtxt(os.path.join('mats', 'N06625_f-values.dat'), delimiter=',')
+    # fv[:,0] += 273.15 # degC to K
+    # fv[:,1:] *= 3e6 # apply 3f criteria and convert MPa->Pa
+    # nfv = 5 # f in 1e2, 1e3, 1e4 and 1e5 hours, as well as ASME S_m
+    # T_int = np.linspace(500, 750, 11)+273.15
+    # T_met = np.zeros([len(T_int), nfv])
+    # peakFlux = np.zeros([len(T_int), nfv])
+    # t = time.clock()
+    # for i in xrange(len(T_int)):
+    #     s.T_int = T_int[i]
+    #     sodium.update(T_int[i])
+    #     s.h_int = HTC(False, sodium, a, b, k, 'Chen', 'mdot', mdot)
+    #     for j in range(nfv):
+    #         peakFlux[i, j] = opt.newton(
+    #             findFlux, 1e5,
+    #             args=(s, fv, j+1, 'outside'),
+    #             maxiter=100, tol=1e-2
+    #         )
+    #         T_met[i, j] = np.max(s.T)
+    # valprint('Time', time.clock() - t, 'sec')
     
-    fig = plt.figure(figsize=(3.5, 3.5))    
-    ax = fig.add_subplot(111)
-    ax.plot(T_int-273.15,peakFlux[:,0]*1e-6, label=r'$f$ \textsc{in} \SI{100}{\hour}')
-    ax.plot(T_int-273.15,peakFlux[:,1]*1e-6, label=r'$f$ \textsc{in} \SI{1000}{\hour}')
-    ax.plot(T_int-273.15,peakFlux[:,2]*1e-6, label=r'$f$ \textsc{in} \SI{10000}{\hour}')
-    ax.plot(T_int-273.15,peakFlux[:,3]*1e-6, label=r'$f$ \textsc{in} \SI{100000}{\hour}')
-    ax.plot(T_int-273.15,peakFlux[:,4]*1e-6, label=r'$S_\mathrm{m}$')
-    ax.set_xlabel(r'\textsc{Sodium temperature}, $T_\mathrm{bulk}$ (\si{\celsius})')
-    ax.set_ylabel(r'\textsc{Peak Flux}, (\si{\mega\watt\per\meter\squared})')
-    ax.legend(loc='best')
-    fig.tight_layout()
-    fig.savefig('NPS5S34_N06625_peakFlux.pdf')
-    fig.savefig('NPS5S34_N06625_peakFlux.png', dpi=150)
-    plt.close(fig)
+    # fig = plt.figure(figsize=(3.5, 3.5))    
+    # ax = fig.add_subplot(111)
+    # ax.plot(T_int-273.15,peakFlux[:,0]*1e-6, label=r'$f$ \textsc{in} \SI{100}{\hour}')
+    # ax.plot(T_int-273.15,peakFlux[:,1]*1e-6, label=r'$f$ \textsc{in} \SI{1000}{\hour}')
+    # ax.plot(T_int-273.15,peakFlux[:,2]*1e-6, label=r'$f$ \textsc{in} \SI{10000}{\hour}')
+    # ax.plot(T_int-273.15,peakFlux[:,3]*1e-6, label=r'$f$ \textsc{in} \SI{100000}{\hour}')
+    # ax.plot(T_int-273.15,peakFlux[:,4]*1e-6, label=r'$S_\mathrm{m}$')
+    # ax.set_xlabel(r'\textsc{Sodium temperature}, $T_\mathrm{bulk}$ (\si{\celsius})')
+    # ax.set_ylabel(r'\textsc{Peak Flux}, (\si{\mega\watt\per\meter\squared})')
+    # ax.legend(loc='best')
+    # fig.tight_layout()
+    # fig.savefig('NPS5S34_N06625_peakFlux.pdf')
+    # fig.savefig('NPS5S34_N06625_peakFlux.png', dpi=150)
+    # plt.close(fig)
 
-    ## Dump peak flux results to CSV file:
-    csv = np.zeros([len(T_int), 11])
-    csv[:,0] = T_int
-    csv[:,1] = T_met[:,0]
-    csv[:,2] = peakFlux[:,0]
-    csv[:,3] = T_met[:,1]
-    csv[:,4] = peakFlux[:,1]
-    csv[:,5] = T_met[:,2]
-    csv[:,6] = peakFlux[:,2]
-    csv[:,7] = T_met[:,3]
-    csv[:,8] = peakFlux[:,3]
-    csv[:,9] = T_met[:,4]
-    csv[:,10] = peakFlux[:,4]
-    np.savetxt('NPS5S34_N06625_peakFlux.csv', csv, delimiter=',',
-               header='T_int(K),T_metal@3f_in_1e2h(K),q_in_1e2h(MPa),'+\
-               'T_metal@3f_in_1e3h(K),q_in_1e3h(MPa),'+\
-               'T_metal@3f_in_1e4h(K),q_in_1e4h(MPa),'+\
-               'T_metal@3f_in_1e5h(K),q_in_1e5h(MPa),'+\
-               'T_metal@3Sm(K),q_in_Sm(MPa)')
+    # ## Dump peak flux results to CSV file:
+    # csv = np.c_[T_int,
+    #             T_met[:,0], peakFlux[:,0],
+    #             T_met[:,1], peakFlux[:,1],
+    #             T_met[:,2], peakFlux[:,2],
+    #             T_met[:,3], peakFlux[:,3],
+    #             T_met[:,4], peakFlux[:,4]
+    # ]
+    # np.savetxt('NPS5S34_N06625_peakFlux.csv', csv, delimiter=',',
+    #            header='T_int(K),T_metal@3f_in_1e2h(K),q_in_1e2h(MPa),'+\
+    #            'T_metal@3f_in_1e3h(K),q_in_1e3h(MPa),'+\
+    #            'T_metal@3f_in_1e4h(K),q_in_1e4h(MPa),'+\
+    #            'T_metal@3f_in_1e5h(K),q_in_1e5h(MPa),'+\
+    #            'T_metal@3Sm(K),q_in_Sm(MPa)')
 
 
 ##################################### MAIN #####################################

@@ -84,7 +84,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
 
 ### ASTRI2()
 <code>
-============== NPS Sch. 5S 3/4" N06625 at 650 degC =============
+=========== 25.4mm OD x 1.65mm WT N06625 at 650 degC ===========
 
                              b:  12.7000 (mm)
                              a:  11.0500 (mm)
@@ -111,8 +111,27 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                            HCR:  125.2695 (J/K/s)
                          h_int:  17395.9490 (W/m^2/K)
                             Bi:  1.5028 (-)
+                   dead-weight:  1.3489 (kg/m)
+                           P_i:  6.0000 (bar (x1e-5 Pa))
 
-                    Generalised plane strain                    
+            Generalised plane strain (pressure only)            
+
+                        Tbar_i:  888.0000 (K)
+                          B'_1:  0.0000 (K)
+                          D'_1: -0.0000 (K)
+                        Tbar_o:  888.0000 (K)
+                         B''_1:  0.0000 (K)
+                         D''_1: -0.0000 (K)
+
+                  Stress at outside tube crown:                 
+
+                       sigma_r:  0.0000 (MPa)
+                  sigma_rTheta:  0.0000 (MPa)
+                   sigma_theta:  3.7390 (MPa)
+                       sigma_z:  0.0000 (MPa)
+                      sigma_Eq:  3.7390 (MPa)
+
+             Generalised plane strain (thermal only)            
 
                         Tbar_i:  903.7004 (K)
                           B'_1:  23.8937 (K)
@@ -128,7 +147,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                    sigma_theta: -105.3066 (MPa)
                        sigma_z: -306.6446 (MPa)
                       sigma_Eq:  269.8679 (MPa)
-                          Time:  0.0944 (sec)
+                          Time:  0.1011 (sec)
 
       Generalised plane strain with annulled bending moment     
 
@@ -147,7 +166,43 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                        sigma_z: -169.0042 (MPa)
                       sigma_Eq:  147.8331 (MPa)
 
-                    Determining peak flux...                    
+                Determining peak flux for N06625                
 
-                          Time:  27.7873 (sec)
+                          Time:  24.7906 (sec)
+
+=========== 33.4mm OD x 1.32mm WT N06320 at 650 degC ===========
+
+                             b:  16.7000 (mm)
+                             a:  15.3800 (mm)
+                             k:  21.4000 (kg*m/s^3/K)
+                         alpha:  16.5000 (x1e6 K^-1)
+                             E:  172.0000 (GPa)
+                            nu:  0.3100 (-)
+                            CG:  750.0000 (kW/m^2)
+                          mdot:  0.1000 (kg/s)
+
+                          Liquid Sodium                         
+
+                             T:  888.0000 (K)
+                           rho:  807.6339 (kg/m^3)
+                            Cp:  1252.6951 (m^2/s^2/K)
+                            mu:  203.3446 (x1e6 kg/m/s)
+                         kappa:  58.8628 (kg*m/s^3/K)
+                            Pr:  0.0043 (-)
+                             U:  0.1666 (m/s)
+                          mdot:  0.1000 (kg/s)
+                            Re:  20355.9410 (-)
+                            Pe:  88.0904 (-)
+                        deltaP: -9.4882 (Pa/m)
+                           HCR:  125.2695 (J/K/s)
+                         h_int:  12061.7567 (W/m^2/K)
+                            Bi:  0.7440 (-)
+                   dead-weight:  1.6937 (kg/m)
+                           P_i:  0.0000 (bar (x1e-5 Pa))
+
+                Determining peak flux for N06230                
+
+                          Time:  32.9860 (sec)
+
+================ COMPARISON OF N06625 AND N06230 ===============
 </code>

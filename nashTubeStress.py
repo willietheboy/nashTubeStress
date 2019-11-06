@@ -462,7 +462,8 @@ class Solver:
         # Pressure stress component:
         PR = ((a2 * self.P_i) / (b2 - a2)) * (1 - (b2 / meshR2))
         PTheta = ((a2 * self.P_i) / (b2 - a2)) * (1 + (b2 / meshR2))
-        PZ = 0 #(a2 * self.P_i) / (b2 - a2)
+        ## uncomment for simple plane strain:
+        PZ = 0. ##(a2 * self.P_i) / (b2 - a2)
         PEq = np.sqrt(0.5 * ((PR - PTheta)**2 + \
                              (PTheta - PZ)**2 + \
                              (PZ - PR)**2))
@@ -586,6 +587,10 @@ def valprint(string, value, unit='-'):
     """ Ensure uniform formatting of scalar value outputs. """
     print("{0:>30}: {1: .4f} ({2})".format(string, value, unit))
 
+def valeprint(string, value, unit='-'):
+    """ Ensure uniform formatting of scalar value outputs. """
+    print("{0:>30}: {1: .4e} ({2})".format(string, value, unit))
+
 def matprint(string, value):
     """ Ensure uniform formatting of matrix value outputs. """
     print("{0}:".format(string))
@@ -599,8 +604,8 @@ def HTC(debug, thermo, a, b, k, correlation, mode, arg):
         a : tube inner diameter (m)
         b : tube outer diameter (m)
         k : tube thermal conductivity (W/(m.K))
-        corrlation : 'Dittus', 'Skupinski', 'Sleicher'
-        mode : 'velocity','mdot','heatCapRate' (m/s,kg/s,???)
+        corrlation : 'Dittus', 'Skupinski', 'Sleicher', ...
+        mode : 'velocity', 'mdot', 'heatCapRate' (m/s, kg/s, J/K/s)
         arg : either velocity, mass-flow or heat capacity rate
     Return:
         h : heat transfer coefficient (W/(m^2.K))
@@ -847,6 +852,8 @@ def ASTRI2():
     valprint('E', E*1e-9, 'GPa')
     nu = 0.31          # Poisson
     valprint('nu', nu)
+    rho = 8440         # density kg/m^3
+    m_t = (pi*b**2-pi*a**2)*rho
 
     ## Thermal constants
     CG = 7.5e5         # absorbed flux (W/m^2)
@@ -860,152 +867,156 @@ def ASTRI2():
     #h_int = HTC(True, sodium, a, b, k, 'Skupinski', 'mdot', mdot)
     #h_int = HTC(True, sodium, a, b, k, 'Notter', 'mdot', mdot)
     h_int = HTC(True, sodium, a, b, k, 'Chen', 'mdot', mdot)
+    m_s = pi*a**2*sodium.rho
+    
+    ## Mechanical constants
+    valprint('dead-weight', m_t+m_s, 'kg/m') # dead weight of tube + fluid
+    P_i = 6e5 # Pa
+    valprint('P_i', P_i*1e-5, 'bar (x1e-5 Pa)')    
 
     """ Create instance of Grid: """
     nr = 17; nt = 61
-    g = Grid(nr=nr, nt=nt, rMin=a, rMax=b) # nr, nt -> resolution
+    gN06625 = Grid(nr=nr, nt=nt, rMin=a, rMax=b) # nr, nt -> resolution
 
     """ Create instance of LaplaceSolver: """
-    s = Solver(g, debug=True, CG=CG, k=k, T_int=T_int, R_f=0,
-               h_int=h_int, P_i=0e5, alpha=alpha, E=E, nu=nu, n=1,
+    sN06625 = Solver(gN06625, debug=True, CG=CG, k=k, T_int=T_int, R_f=0,
+               h_int=h_int, P_i=P_i, alpha=alpha, E=E, nu=nu, n=1,
                bend=False)
 
-    """ External BC: """
-    #s.extBC = s.tubeExtTemp
-    s.extBC = s.tubeExtCosFlux
-    #s.extBC = s.tubeExtConv
-    #s.extBC = s.tubeExtCosFluxRadConv
-    #s.extBC = s.tubeExtCosFluxRadConvAdiabaticBack
-
-    """ Internal BC: """
-    #s.intBC = s.tubeIntTemp
-    #s.intBC = s.tubeIntFlux
-    s.intBC = s.tubeIntConv
-    
     ## Generalised plane strain:
-    t = time.clock(); ret = s.solve(eps=1e-6)
-    headerprint('Generalised plane strain', ' ')
-    s.postProcessing()
-    valprint('Time', time.clock() - t, 'sec')
+    headerprint('Generalised plane strain (pressure only)', ' ')
+    ## If post-processing is called before s.solve thermal field is at T_int:
+    sN06625.postProcessing()
 
-    plotStress(g.theta, g.r, s.sigmaR,
-               s.sigmaR.min(), s.sigmaR.max(), 
-               'N06625_GPS_sigmaR.pdf')
-    plotStress(g.theta, g.r, s.sigmaTheta,
-               s.sigmaTheta.min(), s.sigmaTheta.max(), 
-               'N06625_GPS_sigmaTheta.pdf')
-    plotStress(g.theta, g.r, s.sigmaRTheta, 
-               s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
-               'N06625_GPS_sigmaRTheta.pdf')
-    plotStress(g.theta, g.r, s.sigmaZ, 
-               s.sigmaZ.min(), s.sigmaZ.max(), 
-               'N06625_GPS_sigmaZ.pdf')
-    plotStress(g.theta, g.r, s.sigmaEq, 
-               s.sigmaEq.min(), s.sigmaEq.max(),
-               'N06625_GPS_sigmaEq.pdf')
-
-    # Comparison with FEA -- code_aster 13.6 MECA_STATIQUE [U4.51.01]:
+    """ Comparison with FEA -- code_aster 13.6 MECA_STATIQUE [U4.51.01]: """
     fea = [None]*4
-    mesh = 'FINE' ## radial discretisation of FEA: 'COURSE|FINE'
+    mesh = 'COURSE' ## radial discretisation of FEA: 'COURSE|FINE'
     for i, theta in enumerate([0, 60, 120, 180]):
-        fn = mesh + '_N06625_theta{}'.format(theta) + \
-             '_TSOD615_HTCSOD17394_FLUX750.dat'
+        fn = 'N06625_THETA{}'.format(theta) + \
+             '_TSOD615_HTCSOD17394_FLUX750_MESH{}'.format(mesh) + \
+             '_PRONLY.dat'
         fc = np.genfromtxt(os.path.join('aster', fn), skip_header=5)
         seq = np.sqrt(0.5 * ((fc[:,5] - fc[:,4])**2 + \
                             (fc[:,4] - fc[:,6])**2 + \
                             (fc[:,6] - fc[:,5])**2) + \
                      6 * (fc[:,7]**2))
         fea[i] = np.c_[fc, seq]
-    plotFEA(g.r, s.sigmaTheta, fea, 4, 'N06625_FEA-GPS_sigmaTheta.pdf',
-            'best', r'$\sigma_\theta$')
-    plotFEA(g.r, s.sigmaR, fea, 5, 'N06625_FEA-GPS_sigmaR.pdf',
-            'best', r'$\sigma_r$')
-    plotFEA(g.r, s.sigmaZ, fea, 6, 'N06625_FEA-GPS_sigmaZ.pdf',
-            'best', r'$\sigma_z$')
-    plotFEA(g.r, s.sigmaRTheta, fea, 7, 'N06625_FEA-GPS_sigmaRTheta.pdf',
-            'best', r'$\sigma_{r\theta}$')
-    plotFEA(g.r, s.sigmaEq, fea, 8, 'N06625_FEA-GPS_sigmaEq.pdf',
-            'best', r'$\sigma_{\mathrm{Eq}}$')
+    plotFEA(gN06625.r, sN06625.sigmaTheta, fea, 4, 'N06625_GPS-PRvFEA_sigmaTheta.pdf',
+            'best', r'\textsc{hoop stress}, $\sigma_\theta$')
+    plotFEA(gN06625.r, sN06625.sigmaR, fea, 5, 'N06625_GPS-PRvFEA_sigmaR.pdf',
+            'best', r'\textsc{radial stress}, $\sigma_r$')
+    plotFEA(gN06625.r, sN06625.sigmaZ, fea, 6, 'N06625_GPS-PRvFEA_sigmaZ.pdf',
+            'best', r'\textsc{axial stress}, $\sigma_z$')
+    plotFEA(gN06625.r, sN06625.sigmaRTheta, fea, 7, 'N06625_GPS-PRvFEA_sigmaRTheta.pdf',
+            'best', r'\textsc{in-plane shear stress}, $\sigma_{r\theta}$')
+    plotFEA(gN06625.r, sN06625.sigmaEq, fea, 8, 'N06625_GPS-PRvFEA_sigmaEq.pdf',
+            'best', r'\textsc{equiv. stress}, $\sigma_{\mathrm{Eq}}$')
+
+    headerprint('Generalised plane strain (thermal only)', ' ')
+    sN06625.P_i = 0e5
+    
+    """ External BC: """
+    #sN06625.extBC = sN06625.tubeExtTemp
+    sN06625.extBC = sN06625.tubeExtCosFlux
+    #sN06625.extBC = sN06625.tubeExtConv
+    #sN06625.extBC = sN06625.tubeExtCosFluxRadConv
+    #sN06625.extBC = sN06625.tubeExtCosFluxRadConvAdiabaticBack
+
+    """ Internal BC: """
+    #sN06625.intBC = sN06625.tubeIntTemp
+    #sN06625.intBC = sN06625.tubeIntFlux
+    sN06625.intBC = sN06625.tubeIntConv
+
+    """ Run LaplaceSolver """
+    t = time.clock(); ret = sN06625.solve(eps=1e-6)
+    sN06625.postProcessing()
+    valprint('Time', time.clock() - t, 'sec')
+
+    plotStress(gN06625.theta, gN06625.r, sN06625.sigmaR,
+               sN06625.sigmaR.min(), sN06625.sigmaR.max(), 
+               'N06625_GPS_sigmaR.pdf')
+    plotStress(gN06625.theta, gN06625.r, sN06625.sigmaTheta,
+               sN06625.sigmaTheta.min(), sN06625.sigmaTheta.max(), 
+               'N06625_GPS_sigmaTheta.pdf')
+    plotStress(gN06625.theta, gN06625.r, sN06625.sigmaRTheta, 
+               sN06625.sigmaRTheta.min(), sN06625.sigmaRTheta.max(), 
+               'N06625_GPS_sigmaRTheta.pdf')
+    plotStress(gN06625.theta, gN06625.r, sN06625.sigmaZ, 
+               sN06625.sigmaZ.min(), sN06625.sigmaZ.max(), 
+               'N06625_GPS_sigmaZ.pdf')
+    plotStress(gN06625.theta, gN06625.r, sN06625.sigmaEq, 
+               sN06625.sigmaEq.min(), sN06625.sigmaEq.max(),
+               'N06625_GPS_sigmaEq.pdf')
+
+    """ Comparison with FEA -- code_aster 13.6 MECA_STATIQUE [U4.51.01]: """
+    fea = [None]*4
+    mesh = 'COURSE' ## radial discretisation of FEA: 'COURSE|FINE'
+    for i, theta in enumerate([0, 60, 120, 180]):
+        fn = 'N06625_THETA{}'.format(theta) + \
+             '_TSOD615_HTCSOD17394_FLUX750_MESH{}'.format(mesh) + \
+             '_THONLY.dat'
+        fc = np.genfromtxt(os.path.join('aster', fn), skip_header=5)
+        seq = np.sqrt(0.5 * ((fc[:,5] - fc[:,4])**2 + \
+                            (fc[:,4] - fc[:,6])**2 + \
+                            (fc[:,6] - fc[:,5])**2) + \
+                     6 * (fc[:,7]**2))
+        fea[i] = np.c_[fc, seq]
+    plotFEA(gN06625.r, sN06625.sigmaTheta, fea, 4, 'N06625_GPSvFEA_sigmaTheta.pdf',
+            'best', r'\textsc{hoop stress}, $\sigma_\theta$')
+    plotFEA(gN06625.r, sN06625.sigmaR, fea, 5, 'N06625_GPSvFEA_sigmaR.pdf',
+            'best', r'\textsc{radial stress}, $\sigma_r$')
+    plotFEA(gN06625.r, sN06625.sigmaZ, fea, 6, 'N06625_GPSvFEA_sigmaZ.pdf',
+            'best', r'\textsc{axial stress}, $\sigma_z$')
+    plotFEA(gN06625.r, sN06625.sigmaRTheta, fea, 7, 'N06625_GPSvFEA_sigmaRTheta.pdf',
+            'best', r'\textsc{in-plane shear stress}, $\sigma_{r\theta}$')
+    plotFEA(gN06625.r, sN06625.sigmaEq, fea, 8, 'N06625_GPSvFEA_sigmaEq.pdf',
+            'best', r'\textsc{equiv. stress}, $\sigma_{\mathrm{Eq}}$')
 
     ## Generalised plane strain with annulled bending:
-    s.bend = True
+    sN06625.bend = True
     headerprint('Generalised plane strain with annulled bending moment', ' ')
-    s.postProcessing()
+    sN06625.postProcessing()
 
-    plotStress(g.theta, g.r, s.sigmaR,
-               s.sigmaR.min(), s.sigmaR.max(), 
+    plotStress(gN06625.theta, gN06625.r, sN06625.sigmaR,
+               sN06625.sigmaR.min(), sN06625.sigmaR.max(), 
                'N06625_GPS-AB_sigmaR.pdf')
-    plotStress(g.theta, g.r, s.sigmaTheta,
-               s.sigmaTheta.min(), s.sigmaTheta.max(), 
+    plotStress(gN06625.theta, gN06625.r, sN06625.sigmaTheta,
+               sN06625.sigmaTheta.min(), sN06625.sigmaTheta.max(), 
                'N06625_GPS-AB_sigmaTheta.pdf')
-    plotStress(g.theta, g.r, s.sigmaRTheta, 
-               s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
+    plotStress(gN06625.theta, gN06625.r, sN06625.sigmaRTheta, 
+               sN06625.sigmaRTheta.min(), sN06625.sigmaRTheta.max(), 
                'N06625_GPS-AB_sigmaRTheta.pdf')
-    plotStress(g.theta, g.r, s.sigmaZ, 
-               s.sigmaZ.min(), s.sigmaZ.max(), 
+    plotStress(gN06625.theta, gN06625.r, sN06625.sigmaZ, 
+               sN06625.sigmaZ.min(), sN06625.sigmaZ.max(), 
                'N06625_GPS-AB_sigmaZ.pdf')
-    plotStress(g.theta, g.r, s.sigmaEq, 
-               s.sigmaEq.min(), s.sigmaEq.max(),
+    plotStress(gN06625.theta, gN06625.r, sN06625.sigmaEq, 
+               sN06625.sigmaEq.min(), sN06625.sigmaEq.max(),
                'N06625_GPS-AB_sigmaEq.pdf')
 
-    ## Sensitivity of heat transfer coefficient and peak stress to mass-flow
-    s.bend = False
-    s.debug = False
-    mdot = np.linspace(0.05, 0.2)
-    h_int = np.zeros(len(mdot))
-    sig_eq = np.zeros(len(h_int))
-    for i, m in enumerate(mdot):
-        #h_int[i] = HTC(False, sodium, a, b, k, 'Skupinski', 'mdot', m)
-        #h_int[i] = HTC(False, sodium, a, b, k, 'Notter', 'mdot', m)
-        h_int[i] = HTC(False, sodium, a, b, k, 'Chen', 'mdot', m)
-        s.h_int = h_int[i]
-        ret = s.solve(eps=1e-6)
-        s.postProcessing()
-        sig_eq[i] = s.sigmaEq[0,-1]
-    ## plot of mdot vs internal convection coefficient
-    fig = plt.figure(figsize=(3.5, 3.5))
-    ax = fig.add_subplot(111)
-    ax.plot(mdot, h_int*1e-3, '-')
-    ax.set_xlabel(r'$\dot{m}$ (\si{\kilo\gram\per\second})')
-    ax.set_ylabel(r'$h_\mathrm{int}$ (\si{\kilo\watt\per\meter\squared\per\kelvin})')
-    fig.tight_layout()
-    fig.savefig('N06625_mdot-intConv.pdf')
-    #fig.savefig('N06625_mdot-intConv.png', dpi=150)
-    plt.close(fig)
-    ## plot of mdot vs maximum equivalent stress
-    fig = plt.figure(figsize=(3.5, 3.5))
-    ax = fig.add_subplot(111)
-    ax.plot(mdot, sig_eq*1e-6, '-')
-    ax.set_xlabel(r'$\dot{m}$ (\si{\kilo\gram\per\second})')
-    ax.set_ylabel(r'$\max(\sigma_\mathrm{Eq})$ (MPa)')
-    fig.tight_layout()
-    fig.savefig('N06625_mdot-sigmaEq.pdf')
-    #fig.savefig('N06625_mdot-sigmaEq.png', dpi=150)
-    plt.close(fig)
-
-    headerprint('Determining peak flux...', ' ')
+    headerprint('Determining peak flux for N06625', ' ')
     mdot = 0.1         # mass flow (kg/s)
-    s.debug = False
+    sN06625.debug = False; sN06625.bend = False
     sodium.debug = False
     fv = np.genfromtxt(os.path.join('mats', 'N06625_f-values.dat'), delimiter=',')
     fv[:,0] += 273.15 # degC to K
     fv[:,1:] *= 3e6 # apply 3f criteria and convert MPa->Pa
-    nfv = 5 # f in 1e2, 1e3, 1e4 and 1e5 hours, as well as ASME S_m
+    #nfv = 5 # f in 1e2, 1e3, 1e4 and 1e5 hours, as well as ASME S_m
+    nfv = 4 # f in 1e2, 1e3 and 1e4 hours, as well as ASME S_m
     T_int = np.linspace(500, 750, 11)+273.15
     T_met = np.zeros([len(T_int), nfv])
     peakFlux = np.zeros([len(T_int), nfv])
     t = time.clock()
     for i in xrange(len(T_int)):
-        s.T_int = T_int[i]
+        sN06625.T_int = T_int[i]
         sodium.update(T_int[i])
-        s.h_int = HTC(False, sodium, a, b, k, 'Chen', 'mdot', mdot)
+        sN06625.h_int = HTC(False, sodium, a, b, k, 'Chen', 'mdot', mdot)
         for j in range(nfv):
             peakFlux[i, j] = opt.newton(
                 findFlux, 1e5,
-                args=(s, fv, j+1, 'outside'),
+                args=(sN06625, fv, j+1, 'outside'),
                 maxiter=100, tol=1e-2
             )
-            T_met[i, j] = np.max(s.T)
+            T_met[i, j] = np.max(sN06625.T)
     valprint('Time', time.clock() - t, 'sec')
     
     fig = plt.figure(figsize=(3.5, 3.5))    
@@ -1013,31 +1024,187 @@ def ASTRI2():
     ax.plot(T_int-273.15,peakFlux[:,0]*1e-6, label=r'$f$ \textsc{in} \SI{100}{\hour}')
     ax.plot(T_int-273.15,peakFlux[:,1]*1e-6, label=r'$f$ \textsc{in} \SI{1000}{\hour}')
     ax.plot(T_int-273.15,peakFlux[:,2]*1e-6, label=r'$f$ \textsc{in} \SI{10000}{\hour}')
-    ax.plot(T_int-273.15,peakFlux[:,3]*1e-6, label=r'$f$ \textsc{in} \SI{100000}{\hour}')
-    ax.plot(T_int-273.15,peakFlux[:,4]*1e-6, label=r'$S_\mathrm{m}$')
-    ax.set_xlabel(r'\textsc{Sodium temperature}, $T_\mathrm{bulk}$ (\si{\celsius})')
-    ax.set_ylabel(r'\textsc{Peak Flux}, (\si{\mega\watt\per\meter\squared})')
+    #ax.plot(T_int-273.15,peakFlux[:,3]*1e-6, label=r'$f$ \textsc{in} \SI{100000}{\hour}')
+    ax.plot(T_int-273.15,peakFlux[:,3]*1e-6, label=r'$f=S_\mathrm{m}$')
+    ax.set_xlabel(r'\textsc{sodium temperature}, $T_\mathrm{bulk}$ (\si{\celsius})')
+    ax.set_ylabel(r'\textsc{peak flux}, (\si{\mega\watt\per\meter\squared})')
+    ax.set_ylim(0.2, 1.6)
     ax.legend(loc='best')
     fig.tight_layout()
     fig.savefig('N06625_peakFlux.pdf')
     fig.savefig('N06625_peakFlux.png', dpi=150)
     plt.close(fig)
-
     ## Dump peak flux results to CSV file:
     csv = np.c_[T_int,
                 T_met[:,0], peakFlux[:,0],
                 T_met[:,1], peakFlux[:,1],
                 T_met[:,2], peakFlux[:,2],
-                T_met[:,3], peakFlux[:,3],
-                T_met[:,4], peakFlux[:,4]
+                #T_met[:,3], peakFlux[:,3],
+                T_met[:,3], peakFlux[:,3]
     ]
     np.savetxt('N06625_peakFlux.csv', csv, delimiter=',',
-               header='T_int(K),T_metal@3f_in_1e2h(K),q_in_1e2h(MPa),'+\
-               'T_metal@3f_in_1e3h(K),q_in_1e3h(MPa),'+\
-               'T_metal@3f_in_1e4h(K),q_in_1e4h(MPa),'+\
-               'T_metal@3f_in_1e5h(K),q_in_1e5h(MPa),'+\
-               'T_metal@3Sm(K),q_in_Sm(MPa)')
+               header='T_int(K),'+\
+               'T_metal@3f_in_1e2h(K),flux_in_1e2h(MPa),'+\
+               'T_metal@3f_in_1e3h(K),flux_in_1e3h(MPa),'+\
+               'T_metal@3f_in_1e4h(K),flux_in_1e4h(MPa),'+\
+               #'T_metal@3f_in_1e5h(K),flux_in_1e5h(MPa),'+\
+               'T_metal@3Sm(K),flux_in_Sm(MPa)'
+    )
 
+    headerprint(' 33.4mm OD x 1.32mm WT N06320 at 650 degC ')
+
+    ## Material constants
+    b = 33.4e-3/2.     # inside tube radius (mm->m)
+    valprint('b', b*1e3, 'mm')
+    a = b - 1.32e-3    # outside tube radius (mm->m)
+    valprint('a', a*1e3, 'mm')
+    k = 21.4           # thermal conductivity (kg*m/s^3/K)
+    valprint('k', k, 'kg*m/s^3/K')
+    alpha = 16.5e-6  # thermal dilation (K^-1)
+    valprint('alpha', alpha*1e6, 'x1e6 K^-1')
+    E = 172e9          # Youngs modulus (Pa)
+    valprint('E', E*1e-9, 'GPa')
+    nu = 0.31          # Poisson
+    valprint('nu', nu)
+    rho = 8220 # density kg/m^3
+    m_t = (pi*b**2-pi*a**2)*rho
+
+    ## Thermal constants
+    CG = 7.5e5         # absorbed flux (W/m^2)
+    valprint('CG', CG*1e-3, 'kW/m^2')
+    mdot = 0.1         # mass flow (kg/s)
+    valprint('mdot', mdot, 'kg/s')
+    T_int = 888        # bulk sodium temperature (K)
+    sodium = liquidSodium(True); sodium.update(T_int)
+    h_int = HTC(True, sodium, a, b, k, 'Chen', 'mdot', mdot)
+    m_s = pi*a**2*sodium.rho
+
+    ## Mechanical constants
+    valprint('dead-weight', m_t+m_s, 'kg/m') # dead weight of tube + fluid
+    P_i = 0e5 # Pa
+    valprint('P_i', P_i*1e-5, 'bar (x1e-5 Pa)')    
+
+    """ Create instance of Grid: """
+    nr = 17; nt = 61
+    gN06230 = Grid(nr=nr, nt=nt, rMin=a, rMax=b) # nr, nt -> resolution
+
+    """ Create instance of LaplaceSolver: """
+    sN06230 = Solver(gN06230, debug=False, CG=CG, k=k, T_int=T_int, R_f=0,
+               h_int=h_int, P_i=P_i, alpha=alpha, E=E, nu=nu, n=1,
+               bend=False)
+
+    """ External BC: """
+    sN06230.extBC = sN06230.tubeExtCosFlux
+
+    """ Internal BC: """
+    sN06230.intBC = sN06230.tubeIntConv
+
+    headerprint('Determining peak flux for N06230', ' ')
+    mdot = 0.1         # mass flow (kg/s)
+    sN06230.debug = False
+    sodium.debug = False
+    fv = np.genfromtxt(os.path.join('mats', 'N06230_f-values.dat'), delimiter=',')
+    fv[:,0] += 273.15 # degC to K
+    fv[:,1:] *= 3e6 # apply 3f criteria and convert MPa->Pa
+    #nfv = 5 # f in 1e2, 1e3, 1e4 and 1e5 hours, as well as ASME S_m
+    nfv = 4 # f in 1e2, 1e3 and 1e4 hours, as well as ASME S_m
+    T_int = np.linspace(500, 750, 11)+273.15
+    T_met = np.zeros([len(T_int), nfv])
+    peakFlux = np.zeros([len(T_int), nfv])
+    t = time.clock()
+    for i in xrange(len(T_int)):
+        sN06230.T_int = T_int[i]
+        sodium.update(T_int[i])
+        sN06230.h_int = HTC(False, sodium, a, b, k, 'Chen', 'mdot', mdot)
+        for j in range(nfv):
+            peakFlux[i, j] = opt.newton(
+                findFlux, 1e5,
+                args=(sN06230, fv, j+1, 'outside'),
+                maxiter=100, tol=1e-2
+            )
+            T_met[i, j] = np.max(sN06230.T)
+    valprint('Time', time.clock() - t, 'sec')
+    
+    fig = plt.figure(figsize=(3.5, 3.5))    
+    ax = fig.add_subplot(111)
+    ax.plot(T_int-273.15,peakFlux[:,0]*1e-6, label=r'$f$ \textsc{in} \SI{100}{\hour}')
+    ax.plot(T_int-273.15,peakFlux[:,1]*1e-6, label=r'$f$ \textsc{in} \SI{1000}{\hour}')
+    ax.plot(T_int-273.15,peakFlux[:,2]*1e-6, label=r'$f$ \textsc{in} \SI{10000}{\hour}')
+    ax.plot(T_int-273.15,peakFlux[:,3]*1e-6, label=r'$f=S_\mathrm{m}$')
+    ax.set_xlabel(r'\textsc{sodium temperature}, $T_\mathrm{bulk}$ (\si{\celsius})')
+    ax.set_ylabel(r'\textsc{peak flux}, (\si{\mega\watt\per\meter\squared})')
+    ax.set_ylim(0.2, 1.6)
+    ax.legend(loc='best')
+    fig.tight_layout()
+    fig.savefig('N06230_peakFlux.pdf')
+    fig.savefig('N06230_peakFlux.png', dpi=150)
+    plt.close(fig)
+    ## Dump peak flux results to CSV file:
+    csv = np.c_[T_int,
+                T_met[:,0], peakFlux[:,0],
+                T_met[:,1], peakFlux[:,1],
+                T_met[:,2], peakFlux[:,2],
+                T_met[:,3], peakFlux[:,3]
+    ]
+    np.savetxt('N06230_peakFlux.csv', csv, delimiter=',',
+               header='T_int(K),'+\
+               'T_metal@3f_in_1e2h(K),flux_in_1e2h(MPa),'+\
+               'T_metal@3f_in_1e3h(K),flux_in_1e3h(MPa),'+\
+               'T_metal@3f_in_1e4h(K),flux_in_1e4h(MPa),'+\
+               'T_metal@3Sm(K),flux_in_Sm(MPa)'
+    )
+
+    headerprint(' COMPARISON OF N06625 AND N06230 ')
+
+    ## Sensitivity of heat transfer coefficient and peak stress to mass-flow
+    T_int = 888; sodium.update(T_int)
+    sN06625.T_int = T_int; sN06625.CG = CG
+    sN06230.T_int = T_int; sN06230.CG = CG
+    mdot = np.linspace(0.05, 1)
+    h_N06625 = np.zeros(len(mdot))
+    sig_N06625 = np.zeros(len(h_N06625))
+    h_N06230 = np.zeros(len(mdot))
+    sig_N06230 = np.zeros(len(h_N06230))
+    for i, m in enumerate(mdot):
+        h_N06625[i] = HTC(
+            False, sodium, gN06625.a, gN06625.b,
+            sN06625.k, 'Chen', 'mdot', m
+        )
+        sN06625.h_int = h_N06625[i]
+        ret = sN06625.solve(eps=1e-6)
+        sN06625.postProcessing()
+        sig_N06625[i] = sN06625.sigmaEq[0,-1]
+        h_N06230[i] = HTC(
+            False, sodium, gN06230.a, gN06230.b,
+            sN06230.k, 'Chen', 'mdot', m
+        )
+        sN06230.h_int = h_N06230[i]
+        ret = sN06230.solve(eps=1e-6)
+        sN06230.postProcessing()
+        sig_N06230[i] = sN06230.sigmaEq[0,-1]
+    fig = plt.figure(figsize=(3.5, 3.5))
+    ax = fig.add_subplot(111)
+    ax.plot(mdot, h_N06625*1e-3, label='N06625')
+    ax.plot(mdot, h_N06230*1e-3, label='N06230')
+    ax.set_xlabel(r'\textsc{mass flow}, $\dot{m}$ (\si{\kilo\gram\per\second})')
+    ax.set_ylabel(r'\textsc{heat transfer coeff.}, $h_\mathrm{int}$ (\si{\kilo\watt\per\meter\squared\per\kelvin})')
+    ax.legend(loc='best')
+    fig.tight_layout()
+    fig.savefig('N06625andN06230_mdot-intConv.pdf')
+    #fig.savefig('N06625andN06230_mdot-intConv.png', dpi=150)
+    plt.close(fig)
+    ## plot of mdot vs maximum equivalent stress
+    fig = plt.figure(figsize=(3.5, 3.5))
+    ax = fig.add_subplot(111)
+    ax.plot(mdot, sig_N06625*1e-6, label='N06625')
+    ax.plot(mdot, sig_N06230*1e-6, label='N06230')
+    ax.set_xlabel(r'\textsc{mass flow}, $\dot{m}$ (\si{\kilo\gram\per\second})')
+    ax.set_ylabel(r'\textsc{max. equivalent stress}, $\max(\sigma_\mathrm{Eq})$ (MPa)')
+    ax.legend(loc='best')
+    fig.tight_layout()
+    fig.savefig('N06625andN06230_mdot-sigmaEq.pdf')
+    #fig.savefig('N06625andN06230_mdot-sigmaEq.png', dpi=150)
+    plt.close(fig)
 
 ##################################### MAIN #####################################
 

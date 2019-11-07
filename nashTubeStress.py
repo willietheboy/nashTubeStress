@@ -659,7 +659,7 @@ def HTC(debug, thermo, a, b, k, correlation, mode, arg):
         valprint('HCR', hcr, 'J/K/s')
         valprint('h_int', h, 'W/m^2/K')
         valprint('Bi', Bi)
-    return h
+    return [h, DP_f]
 
 def findFlux(flux, s, f, i, point):
     """ 
@@ -850,6 +850,7 @@ def ASTRI2():
     valprint('alpha', alpha*1e6, 'x1e6 K^-1')
     E = 169e9          # Youngs modulus (Pa)
     valprint('E', E*1e-9, 'GPa')
+    valprint('TSP', 1e-3*(alpha*E)/k, 'kPa.m/W')
     nu = 0.31          # Poisson
     valprint('nu', nu)
     rho = 8440         # density kg/m^3
@@ -862,11 +863,11 @@ def ASTRI2():
     valprint('mdot', mdot, 'kg/s')
     T_int = 888        # bulk sodium temperature (K)
     sodium = liquidSodium(True); sodium.update(T_int)
-    #h_int = HTC(True, sodium, a, b, k, 'Skupinski', 'velocity', 4.0)
-    #h_int = HTC(True, sodium, a, b, k, 'Skupinski', 'heatCapRate', 5000)
-    #h_int = HTC(True, sodium, a, b, k, 'Skupinski', 'mdot', mdot)
-    #h_int = HTC(True, sodium, a, b, k, 'Notter', 'mdot', mdot)
-    h_int = HTC(True, sodium, a, b, k, 'Chen', 'mdot', mdot)
+    #h_int, dP = HTC(True, sodium, a, b, k, 'Skupinski', 'velocity', 4.0)
+    #h_int, dP = HTC(True, sodium, a, b, k, 'Skupinski', 'heatCapRate', 5000)
+    #h_int, dP = HTC(True, sodium, a, b, k, 'Skupinski', 'mdot', mdot)
+    #h_int, dP = HTC(True, sodium, a, b, k, 'Notter', 'mdot', mdot)
+    h_int, dP = HTC(True, sodium, a, b, k, 'Chen', 'mdot', mdot)
     m_s = pi*a**2*sodium.rho
     
     ## Mechanical constants
@@ -1009,7 +1010,7 @@ def ASTRI2():
     for i in xrange(len(T_int)):
         sN06625.T_int = T_int[i]
         sodium.update(T_int[i])
-        sN06625.h_int = HTC(False, sodium, a, b, k, 'Chen', 'mdot', mdot)
+        sN06625.h_int, dP = HTC(False, sodium, a, b, k, 'Chen', 'mdot', mdot)
         for j in range(nfv):
             peakFlux[i, j] = opt.newton(
                 findFlux, 1e5,
@@ -1064,6 +1065,7 @@ def ASTRI2():
     valprint('alpha', alpha*1e6, 'x1e6 K^-1')
     E = 172e9          # Youngs modulus (Pa)
     valprint('E', E*1e-9, 'GPa')
+    valprint('TSP', 1e-3*(alpha*E)/k, 'kPa.m/W')
     nu = 0.31          # Poisson
     valprint('nu', nu)
     rho = 8220 # density kg/m^3
@@ -1076,7 +1078,7 @@ def ASTRI2():
     valprint('mdot', mdot, 'kg/s')
     T_int = 888        # bulk sodium temperature (K)
     sodium = liquidSodium(True); sodium.update(T_int)
-    h_int = HTC(True, sodium, a, b, k, 'Chen', 'mdot', mdot)
+    h_int, dP = HTC(True, sodium, a, b, k, 'Chen', 'mdot', mdot)
     m_s = pi*a**2*sodium.rho
 
     ## Mechanical constants
@@ -1115,7 +1117,7 @@ def ASTRI2():
     for i in xrange(len(T_int)):
         sN06230.T_int = T_int[i]
         sodium.update(T_int[i])
-        sN06230.h_int = HTC(False, sodium, a, b, k, 'Chen', 'mdot', mdot)
+        sN06230.h_int, dP = HTC(False, sodium, a, b, k, 'Chen', 'mdot', mdot)
         for j in range(nfv):
             peakFlux[i, j] = opt.newton(
                 findFlux, 1e5,
@@ -1156,17 +1158,19 @@ def ASTRI2():
 
     headerprint(' COMPARISON OF N06625 AND N06230 ')
 
-    ## Sensitivity of heat transfer coefficient and peak stress to mass-flow
+    ## Sensitivity of heat transfer coefficient (pressure drop) and stress to mass-flow
     T_int = 888; sodium.update(T_int)
     sN06625.T_int = T_int; sN06625.CG = CG
     sN06230.T_int = T_int; sN06230.CG = CG
-    mdot = np.linspace(0.05, 1)
+    mdot = np.linspace(0.05, 1, 51)
     h_N06625 = np.zeros(len(mdot))
-    sig_N06625 = np.zeros(len(h_N06625))
+    sig_N06625 = np.zeros(len(mdot))
+    dP_N06625 = np.zeros(len(mdot))
     h_N06230 = np.zeros(len(mdot))
-    sig_N06230 = np.zeros(len(h_N06230))
+    sig_N06230 = np.zeros(len(mdot))
+    dP_N06230 = np.zeros(len(mdot))
     for i, m in enumerate(mdot):
-        h_N06625[i] = HTC(
+        h_N06625[i], dP_N06625[i] = HTC(
             False, sodium, gN06625.a, gN06625.b,
             sN06625.k, 'Chen', 'mdot', m
         )
@@ -1174,7 +1178,7 @@ def ASTRI2():
         ret = sN06625.solve(eps=1e-6)
         sN06625.postProcessing()
         sig_N06625[i] = sN06625.sigmaEq[0,-1]
-        h_N06230[i] = HTC(
+        h_N06230[i], dP_N06230[i] = HTC(
             False, sodium, gN06230.a, gN06230.b,
             sN06230.k, 'Chen', 'mdot', m
         )
@@ -1182,27 +1186,40 @@ def ASTRI2():
         ret = sN06230.solve(eps=1e-6)
         sN06230.postProcessing()
         sig_N06230[i] = sN06230.sigmaEq[0,-1]
-    fig = plt.figure(figsize=(3.5, 3.5))
-    ax = fig.add_subplot(111)
-    ax.plot(mdot, h_N06625*1e-3, label='N06625')
-    ax.plot(mdot, h_N06230*1e-3, label='N06230')
-    ax.set_xlabel(r'\textsc{mass flow}, $\dot{m}$ (\si{\kilo\gram\per\second})')
-    ax.set_ylabel(r'\textsc{heat transfer coeff.}, $h_\mathrm{int}$ (\si{\kilo\watt\per\meter\squared\per\kelvin})')
-    ax.legend(loc='best')
-    fig.tight_layout()
-    fig.savefig('N06625andN06230_mdot-intConv.pdf')
+    fig = plt.figure(figsize=(6, 6))
+    ax1 = fig.add_subplot(211)
+    c1 = 'C0'; c2 = 'C1'
+    N06625_m = Line2D([], [], marker='o', color='k', label='N06625')
+    N06230_m = Line2D([], [], marker='x', color='k', label='N06230')
+    ax1.plot(mdot, h_N06625*1e-3, 'o-', color=c1, markevery=5)
+    ax1.plot(mdot, h_N06230*1e-3, 'x-', color=c1, markevery=5)
+    #ax1.set_xlabel(r'\textsc{mass flow}, $\dot{m}$ (\si{\kilo\gram\per\second})')
+    ax1.set_ylabel(r'\textsc{int. heat transfer}, $h_\mathrm{int}$ ' + \
+                   '(\si{\kilo\watt\per\meter\squared\per\kelvin})', color=c1)
+    ax1.tick_params(axis='y', labelcolor=c1)
+    ax2 = ax1.twinx()
+    ax2.plot(mdot, -dP_N06625*1e-3, 'o-', color=c2, markevery=5)
+    ax2.plot(mdot, -dP_N06230*1e-3, 'x-', color=c2, markevery=5)
+    ax2.set_ylabel(r'\textsc{pressure drop}, $\Delta P$' + \
+                   ' (\si{\kilo\pascal\per\meter})', color=c2)
+    ax2.tick_params(axis='y', labelcolor=c2)
+    #ax1.legend(loc='best')
+    ax1.legend(loc='best', handles=[N06625_m, N06230_m])
+    #fig.tight_layout()
+    #fig.savefig('N06625andN06230_mdot-intConv.pdf')
     #fig.savefig('N06625andN06230_mdot-intConv.png', dpi=150)
     plt.close(fig)
     ## plot of mdot vs maximum equivalent stress
-    fig = plt.figure(figsize=(3.5, 3.5))
-    ax = fig.add_subplot(111)
-    ax.plot(mdot, sig_N06625*1e-6, label='N06625')
-    ax.plot(mdot, sig_N06230*1e-6, label='N06230')
-    ax.set_xlabel(r'\textsc{mass flow}, $\dot{m}$ (\si{\kilo\gram\per\second})')
-    ax.set_ylabel(r'\textsc{max. equivalent stress}, $\max(\sigma_\mathrm{Eq})$ (MPa)')
-    ax.legend(loc='best')
+    #fig = plt.figure(figsize=(3.5, 3.5))
+    ax3 = fig.add_subplot(212)
+    ax3.plot(mdot, sig_N06625*1e-6, 'o-', label='N06625', markevery=5)
+    ax3.plot(mdot, sig_N06230*1e-6, 'x-', label='N06230', markevery=5)
+    ax3.set_xlabel(r'\textsc{mass flow}, $\dot{m}$ (\si{\kilo\gram\per\second})')
+    ax3.set_ylabel(r'\textsc{max. equivalent stress}, $\max\sigma_\mathrm{Eq}$ (MPa)')
+    ax3.legend(loc='best')
     fig.tight_layout()
-    fig.savefig('N06625andN06230_mdot-sigmaEq.pdf')
+    #fig.savefig('N06625andN06230_mdot-sigmaEq.pdf')
+    fig.savefig('N06625andN06230_mdot.pdf')
     #fig.savefig('N06625andN06230_mdot-sigmaEq.png', dpi=150)
     plt.close(fig)
 

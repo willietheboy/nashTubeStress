@@ -39,23 +39,16 @@ Q_ = UR_.Quantity
 # Plotting:
 import matplotlib as mpl # version 2.2.3
 import matplotlib.pyplot as plt
-#params = {'text.latex.preamble': [r'\usepackage{mathptmx,txfonts,siunitx}']}
+#params = {'text.latex.preamble': [r'\usepackage{newtxtext,newtxmath,siunitx}']}
 #plt.rcParams.update(params)
 mpl.rc('figure.subplot', bottom=0.13, top=0.95)
 mpl.rc('figure.subplot', left=0.15, right=0.95)
-# mpl.rc('xtick', labelsize='medium')
-# mpl.rc('ytick', labelsize='medium')
-# mpl.rc('axes', labelsize='large')
-# mpl.rc('axes', titlesize='large')
-# mpl.rc('legend', fontsize='medium')
-# mpl.rc('lines', markersize=4)
-# mpl.rc('lines', linewidth=0.5)
 from matplotlib import colors, ticker, cm
 from matplotlib.transforms import Affine2D
 from matplotlib.lines import Line2D
 from matplotlib.projections import PolarAxes
 import matplotlib.transforms as mtransforms
-from mpl_toolkits.axisartist import SubplotHost
+from mpl_toolkits.axes_grid1.parasite_axes import SubplotHost
 from mpl_toolkits.axisartist.grid_finder import \
     (FixedLocator, MaxNLocator, DictFormatter)
 # if you're matplotlib is older than version 2:
@@ -499,8 +492,42 @@ class Solver:
 
 ################################### PLOTTING ###################################
 
+def plotTemperatureAnnotate(theta, r, T, TMin, TMax, filename):
+    fig = plt.figure(figsize=(3.5, 3.5))
+    fig.subplots_adjust(left=-1)
+    fig.subplots_adjust(right=1)
+    fig.subplots_adjust(bottom=0.1)
+    fig.subplots_adjust(top=0.9)
+    ax = fig.add_subplot(111, projection='polar')
+    ax.set_theta_direction(-1)
+    ax.set_theta_offset(np.radians(90))
+    #cmap = cmaps.magma # magma, inferno, plasma, viridis...
+    cmap = cm.get_cmap('magma')
+    levels = ticker.MaxNLocator(nbins=10).tick_values(TMin-273.15, TMax-273.15)
+    cf = ax.contourf(theta, r, T-273.15, levels=levels, cmap=cmap)
+    ax.set_rmin(0)
+    cb = fig.colorbar(cf, ax=ax)
+    cb.set_label(r'$T$ (\si{\celsius})')
+    ax.patch.set_visible(False)
+    ax.spines['polar'].set_visible(False)
+    gridlines = ax.get_xgridlines()
+    ticklabels = ax.get_xticklabels()
+    for i in range(5, len(gridlines)):
+        gridlines[i].set_visible(False)
+        ticklabels[i].set_visible(False)
+    ax.annotate(r'${0:.0f}$'.format(T.max()-273.15)+' (\si{\celsius})', \
+                 xy=(theta[0,-1], r[0,-1]), \
+                 xycoords='data', xytext=(40, 10), \
+                 textcoords='offset points', fontsize=12, \
+                 arrowprops=dict(arrowstyle='->'))
+    ax.grid(axis='y', linewidth=0)
+    ax.grid(axis='x', linewidth=0.2)
+    plt.setp(ax.get_yticklabels(), visible=False)
+    fig.savefig(filename, transparent=True)
+    plt.close(fig)
+
 def plotStress(theta, r, sigma, sigmaMin, sigmaMax, filename):
-    fig = plt.figure(figsize=(2.5, 3))    
+    fig = plt.figure(figsize=(3.5, 3.5))    
     fig.subplots_adjust(left=-1)
     fig.subplots_adjust(right=1)
     fig.subplots_adjust(bottom=0.1)
@@ -527,26 +554,138 @@ def plotStress(theta, r, sigma, sigmaMin, sigmaMax, filename):
     ax.grid(axis='y', linewidth=0)
     ax.grid(axis='x', linewidth=0.2)
     plt.setp(ax.get_yticklabels(), visible=False)
-    #fig.tight_layout()
     fig.savefig(filename, transparent=True)
     plt.close(fig)
 
-def plotFEA(r, sigma, fc, i, filename, loc, ylabel):
+def plotStressAnnotate(theta, r, sigma, sigmaMin, sigmaMax, annSide, filename):
+    if annSide=='left': 
+        annSide=-70
+    else: 
+        annSide=40
+    fig = plt.figure(figsize=(3, 3.25))
+    fig.subplots_adjust(left=-1)
+    fig.subplots_adjust(right=1)
+    fig.subplots_adjust(bottom=0.1)
+    fig.subplots_adjust(top=0.9)
+    ax = fig.add_subplot(111, projection='polar')
+    ax.set_theta_direction(-1)
+    ax.set_theta_offset(np.radians(90))
+    #cmap = cm.get_cmap('jet')
+    cmap = cmaps.magma # magma, inferno, plasma, viridis...
+    #sigmaMin = np.min(sigma*1e-6); sigmaMax = np.max(sigma*1e-6)
+    levels = ticker.MaxNLocator(nbins=10).tick_values(sigmaMin*1e-6, sigmaMax*1e-6)
+    cf = ax.contourf(theta, r, sigma*1e-6, levels=levels, cmap=cmap)
+    ax.set_rmin(0)
+    cb = fig.colorbar(cf, ax=ax)
+    cb.set_label('$\sigma_\mathrm{eq}$ (MPa)')
+    ax.patch.set_visible(False)
+    ax.spines['polar'].set_visible(False)
+    gridlines = ax.get_xgridlines()
+    ticklabels = ax.get_xticklabels()
+    for i in range(5, len(gridlines)):
+        gridlines[i].set_visible(False)
+        ticklabels[i].set_visible(False)
+    #annInd = np.unravel_index(s.sigmaEq.argmax(), s.sigmaEq.shape)
+    annInd = (0, -1)
+    ax.annotate('${0:.0f}$ (MPa)'.format(np.max(sigma*1e-6)), \
+                 xy=(theta[annInd], r[annInd]), \
+                 xycoords='data', xytext=(annSide, 10), \
+                 textcoords='offset points', fontsize=12, \
+                 arrowprops=dict(arrowstyle='->'))
+    ax.grid(axis='y', linewidth=0)
+    ax.grid(axis='x', linewidth=0.2)
+    plt.setp(ax.get_yticklabels(), visible=False)
+    fig.savefig(filename, transparent=True)
+    plt.close(fig)
+
+def plotComponentStress(r, sigmaR, sigmaTheta, sigmaZ, 
+                        sigmaEq, fea, filename, i, loc):
+    fig = plt.figure(figsize=(3.5, 3.5))
+    ax = fig.add_subplot(111)
+    ax.plot(r[i,:]*1e3, sigmaR[i,:]*1e-6, #'b-', 
+            label='$\sigma_r$')
+    ax.plot(r[i,:]*1e3, sigmaTheta[i,:]*1e-6, #'c-', 
+            label=r'$\sigma_\theta$')
+    ax.plot(r[i,:]*1e3, sigmaZ[i,:]*1e-6, #'m-', 
+            label='$\sigma_z$')
+    ax.plot(r[i,:]*1e3, sigmaEq[i,:]*1e-6, #'k-', 
+            label='$\sigma_\mathrm{Eq}$')
+    ax.legend(loc=loc)
+    ax.set_xlabel('$r$ (mm)')
+    ax.set_xlim((a*1e3)-0.1,(b*1e3)+0.1)
+    ax.set_ylabel('$\sigma$ (MPa)')
+    #labels = ax.get_xticklabels()
+    #plt.setp(labels, rotation=30)
+    fig.tight_layout()
+    fig.savefig(filename, transparent=True)
+    plt.close(fig)
+
+def plotNACA(r, sigma, fea, i, filename, loc, ylabel):
+    a = r[0,0]; b = r[0,-1]
+    trX = Q_(1, 'inch').to('mm').magnitude
+    trY = Q_(1, 'ksi').to('MPa').magnitude
+    trans = mtransforms.Affine2D().scale(trX,trY)
+    fig = plt.figure(figsize=(4, 3.5))
+    ax = SubplotHost(fig, 1, 1, 1)
+    axa = ax.twin(trans)
+    axa.set_viewlim_mode("transform")
+    axa.axis["top"].set_label('$r$ (in.)')
+    axa.axis["top"].label.set_visible(True)
+    axa.axis["right"].set_label(ylabel+' (ksi)')
+    axa.axis["right"].label.set_visible(True)
+    ax = fig.add_subplot(ax)
+    ax.plot(r[0,:]*1e3, sigma[0,:]*1e-6, '-',
+            color='C0',label=r'$\theta=0^\circ$')
+    ax.plot((a+fea[0][:,0])*1e3, fea[0][:,i]*1e-6, 'o',
+            color='C0', markevery=1)
+    ax.plot(r[0,:]*1e3, sigma[20,:]*1e-6, '-',
+            color='C1', label=r'$\theta=60^\circ$')
+    ax.plot((a+fea[1][:,0])*1e3, fea[1][:,i]*1e-6, '^',
+            color='C1', markevery=1)
+    ax.plot(r[0,:]*1e3, sigma[40,:]*1e-6, '-',
+            color='C2', label=r'$\theta=120^\circ$')
+    ax.plot((a+fea[2][:,0])*1e3, fea[2][:,i]*1e-6, 'v',
+            color='C2', markevery=1)
+    ax.plot(r[0,:]*1e3, sigma[60,:]*1e-6, '-',
+            color='C3', label=r'$\theta=180^\circ$')
+    ax.plot((a+fea[3][:,0])*1e3, fea[3][:,i]*1e-6, 's',
+            color='C3', markevery=1)
+    ax.set_xlabel('$r$ (mm)')
+    ax.set_xlim((a*1e3)-10,(b*1e3)+10)
+    ax.set_ylabel(ylabel+' (MPa)')
+    #ax.set_ylim(-400, 400)
+    c0line = Line2D([], [], color='C0', marker='o',
+                   label=r'$\theta=0^\circ$')
+    c1line = Line2D([], [], color='C1', marker='^',
+                   label=r'$\theta=60^\circ$')
+    c2line = Line2D([], [], color='C2', marker='v',
+                   label=r'$\theta=120^\circ$')
+    c3line = Line2D([], [], color='C3', marker='s',
+                   label=r'$\theta=180^\circ$')
+    handles=[c0line, c1line, c2line, c3line]
+    labels = [h.get_label() for h in handles]
+    ax.legend([handle for i,handle in enumerate(handles)],
+              [label for i,label in enumerate(labels)], loc=loc)
+    fig.tight_layout()
+    fig.savefig(filename, transparent=True)
+    plt.close(fig)
+
+def plotASTER(r, sigma, fea, i, filename, loc, ylabel):
     fig = plt.figure(figsize=(3.5, 3.5))
     ax = fig.add_subplot(111)
     a = r[0,0]
     ax.plot(r[0,:]*1e3, sigma[0,:]*1e-6, '-', color='C0', 
             label=r'$\theta=0^\circ$')
-    ax.plot((a+fc[0][:,0])*1e3, fc[0][:,i], 'o', color='C0', markevery=1)
+    ax.plot((a+fea[0][:,0])*1e3, fea[0][:,i], 'o', color='C0', markevery=1)
     ax.plot(r[0,:]*1e3, sigma[20,:]*1e-6, '-', color='C1', 
             label=r'$\theta=60^\circ$')
-    ax.plot((a+fc[1][:,0])*1e3, fc[1][:,i], '^', color='C1', markevery=1)
+    ax.plot((a+fea[1][:,0])*1e3, fea[1][:,i], '^', color='C1', markevery=1)
     ax.plot(r[0,:]*1e3, sigma[40,:]*1e-6, '-', color='C2', 
             label=r'$\theta=120^\circ$')
-    ax.plot((a+fc[2][:,0])*1e3, fc[2][:,i], 'v', color='C2', markevery=1)
+    ax.plot((a+fea[2][:,0])*1e3, fea[2][:,i], 'v', color='C2', markevery=1)
     ax.plot(r[0,:]*1e3, sigma[60,:]*1e-6, '-', color='C3', 
             label=r'$\theta=180^\circ$')
-    ax.plot((a+fc[3][:,0])*1e3, fc[3][:,i], 's', color='C3', markevery=1)
+    ax.plot((a+fea[3][:,0])*1e3, fea[3][:,i], 's', color='C3', markevery=1)
     ax.set_xlabel('$r$ (mm)')
     #ax.set_xlim((a*1e3)-10,(b*1e3)+10)
     ax.set_ylabel(ylabel+' (MPa)')
@@ -743,19 +882,19 @@ def SE6413():
 
     plotStress(g.theta, g.r, s.sigmaR,
                s.sigmaR.min(), s.sigmaR.max(), 
-               'NPS5S1_S31609_htc10_sigmaR.pdf')
+               'S31609_htc10_sigmaR.pdf')
     plotStress(g.theta, g.r, s.sigmaTheta,
                s.sigmaTheta.min(), s.sigmaTheta.max(), 
-               'NPS5S1_S31609_htc10_sigmaTheta.pdf')
+               'S31609_htc10_sigmaTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaRTheta, 
                s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
-               'NPS5S1_S31609_htc10_sigmaRTheta.pdf')
+               'S31609_htc10_sigmaRTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaZ, 
                s.sigmaZ.min(), s.sigmaZ.max(), 
-               'NPS5S1_S31609_htc10_sigmaZ.pdf')
+               'S31609_htc10_sigmaZ.pdf')
     plotStress(g.theta, g.r, s.sigmaEq, 
                s.sigmaEq.min(), s.sigmaEq.max(),
-               'NPS5S1_S31609_htc10_sigmaEq.pdf')
+               'S31609_htc10_sigmaEq.pdf')
 
     headerprint(' HTC: 40e3 W/m^s/K ', ' ')
     s.h_int = 40e3
@@ -764,26 +903,26 @@ def SE6413():
 
     plotStress(g.theta, g.r, s.sigmaR,
                s.sigmaR.min(), s.sigmaR.max(), 
-               'NPS5S1_S31609_htc40_sigmaR.pdf')
+               'S31609_htc40_sigmaR.pdf')
     plotStress(g.theta, g.r, s.sigmaTheta,
                s.sigmaTheta.min(), s.sigmaTheta.max(), 
-               'NPS5S1_S31609_htc40_sigmaTheta.pdf')
+               'S31609_htc40_sigmaTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaRTheta, 
                s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
-               'NPS5S1_S31609_htc40_sigmaRTheta.pdf')
+               'S31609_htc40_sigmaRTheta.pdf')
     plotStress(g.theta, g.r, s.sigmaZ, 
                s.sigmaZ.min(), s.sigmaZ.max(), 
-               'NPS5S1_S31609_htc40_sigmaZ.pdf')
+               'S31609_htc40_sigmaZ.pdf')
     plotStress(g.theta, g.r, s.sigmaEq, 
                s.sigmaEq.min(), s.sigmaEq.max(),
-               'NPS5S1_S31609_htc40_sigmaEq.pdf')
+               'S31609_htc40_sigmaEq.pdf')
 
 def Holms1952():
     """
     Holms, A.G., 1952. A biharmonic relaxation method for calculating thermal
     stress in cooled irregular cylinders. Technical Report NACA-TR-1059.
     Lewis Flight Propulsion Lab. Cleveland. 
-    URL: https://ntrs.nasa.gov/search.jsp?R=19930092105 .
+    URL: https://ntrs.nasa.gov/search.jsp?R=19930092105
     """
     headerprint(' Holms (1952), NACA-TR-1059 ')
 
@@ -808,6 +947,22 @@ def Holms1952():
           (c2-c0) * (1 - (np.log(b / g.r) / np.log(b / a)))
     s.postProcessing()
 
+    # plotStress(g.theta, g.r, s.sigmaR,
+    #            s.sigmaR.min(), s.sigmaR.max(), 
+    #            'NACA-TR-1059_sigmaR.pdf')
+    # plotStress(g.theta, g.r, s.sigmaTheta,
+    #            s.sigmaTheta.min(), s.sigmaTheta.max(), 
+    #            'NACA-TR-1059_sigmaTheta.pdf')
+    # plotStress(g.theta, g.r, s.sigmaRTheta, 
+    #            s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
+    #            'NACA-TR-1059_sigmaRTheta.pdf')
+    # plotStress(g.theta, g.r, s.sigmaZ, 
+    #            s.sigmaZ.min(), s.sigmaZ.max(), 
+    #            'NACA-TR-1059_sigmaZ.pdf')
+    # plotStress(g.theta, g.r, s.sigmaEq, 
+    #            s.sigmaEq.min(), s.sigmaEq.max(),
+    #            'NACA-TR-1059_sigmaEq.pdf')
+
     headerprint('Table II, p89: radius vs. tangential (hoop) stress', ' ')
     radius_inch = np.linspace(4,12,9)
     radius = Q_(radius_inch, 'inch').to('m')
@@ -815,21 +970,27 @@ def Holms1952():
     for r, sig_t in zip(radius_inch, sigmaTheta):
         valprint('{} (in.)'.format(r), sig_t.magnitude, 'psi')
 
-    plotStress(g.theta, g.r, s.sigmaR,
-               s.sigmaR.min(), s.sigmaR.max(), 
-               'NACA-TR-1059_sigmaR.pdf')
-    plotStress(g.theta, g.r, s.sigmaTheta,
-               s.sigmaTheta.min(), s.sigmaTheta.max(), 
-               'NACA-TR-1059_sigmaTheta.pdf')
-    plotStress(g.theta, g.r, s.sigmaRTheta, 
-               s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
-               'NACA-TR-1059_sigmaRTheta.pdf')
-    plotStress(g.theta, g.r, s.sigmaZ, 
-               s.sigmaZ.min(), s.sigmaZ.max(), 
-               'NACA-TR-1059_sigmaZ.pdf')
-    plotStress(g.theta, g.r, s.sigmaEq, 
-               s.sigmaEq.min(), s.sigmaEq.max(),
-               'NACA-TR-1059_sigmaEq.pdf')
+    """ Comparison with FEA -- code_aster 13.6 MECA_STATIQUE [U4.51.01]: """
+    fea = [None]*4
+    for i, theta in enumerate([0, 60, 120, 180]):
+        fn = 'NACA-TR-1059_THETA{}'.format(theta) + \
+             '_SIEF-CYL.dat'
+        fea[i] = np.genfromtxt(os.path.join('aster', fn), skip_header=5)
+    plotNACA(g.r, s.sigmaTheta, fea, 4, 'NACA-TR-1059_sigmaTheta.pdf', \
+             'best', r'$\sigma_\theta$')
+    plotNACA(g.r, s.sigmaR, fea, 5, 'NACA-TR-1059_sigmaR.pdf', \
+             'best', r'$\sigma_r$')
+    plotNACA(g.r, s.sigmaZ, fea, 6, 'NACA-TR-1059_sigmaZ.pdf', \
+             'best', r'$\sigma_z$')
+    plotNACA(g.r, s.sigmaRTheta, fea, 7, 'NACA-TR-1059_sigmaRTheta.pdf', \
+             'best', r'$\sigma_r\theta$')
+    fea = [None]*4
+    for i, theta in enumerate([0, 60, 120, 180]):
+        fn = 'NACA-TR-1059_THETA{}'.format(theta) + \
+             '_SIEQ.dat'
+        fea[i] = np.genfromtxt(os.path.join('aster', fn), skip_header=5)
+    plotNACA(g.r, s.sigmaEq, fea, 1, 'NACA-TR-1059_sigmaEq.pdf', \
+             'best', r'$\sigma_\mathrm{eq}$')
 
 def ASTRI2():
     """
@@ -902,15 +1063,15 @@ def ASTRI2():
                             (fc[:,6] - fc[:,5])**2) + \
                      6 * (fc[:,7]**2))
         fea[i] = np.c_[fc, seq]
-    plotFEA(gN06625.r, sN06625.sigmaTheta, fea, 4, 'N06625_GPS-PRvFEA_sigmaTheta.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaTheta, fea, 4, 'N06625_GPS-PRvFEA_sigmaTheta.pdf',
             'best', r'\textsc{hoop stress}, $\sigma_\theta$')
-    plotFEA(gN06625.r, sN06625.sigmaR, fea, 5, 'N06625_GPS-PRvFEA_sigmaR.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaR, fea, 5, 'N06625_GPS-PRvFEA_sigmaR.pdf',
             'best', r'\textsc{radial stress}, $\sigma_r$')
-    plotFEA(gN06625.r, sN06625.sigmaZ, fea, 6, 'N06625_GPS-PRvFEA_sigmaZ.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaZ, fea, 6, 'N06625_GPS-PRvFEA_sigmaZ.pdf',
             'best', r'\textsc{axial stress}, $\sigma_z$')
-    plotFEA(gN06625.r, sN06625.sigmaRTheta, fea, 7, 'N06625_GPS-PRvFEA_sigmaRTheta.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaRTheta, fea, 7, 'N06625_GPS-PRvFEA_sigmaRTheta.pdf',
             'best', r'\textsc{in-plane shear stress}, $\sigma_{r\theta}$')
-    plotFEA(gN06625.r, sN06625.sigmaEq, fea, 8, 'N06625_GPS-PRvFEA_sigmaEq.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaEq, fea, 8, 'N06625_GPS-PRvFEA_sigmaEq.pdf',
             'best', r'\textsc{equiv. stress}, $\sigma_{\mathrm{Eq}}$')
 
     headerprint('Generalised plane strain (thermal only)', ' ')
@@ -962,15 +1123,15 @@ def ASTRI2():
                             (fc[:,6] - fc[:,5])**2) + \
                      6 * (fc[:,7]**2))
         fea[i] = np.c_[fc, seq]
-    plotFEA(gN06625.r, sN06625.sigmaTheta, fea, 4, 'N06625_GPSvFEA_sigmaTheta.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaTheta, fea, 4, 'N06625_GPSvFEA_sigmaTheta.pdf',
             'best', r'\textsc{hoop stress}, $\sigma_\theta$')
-    plotFEA(gN06625.r, sN06625.sigmaR, fea, 5, 'N06625_GPSvFEA_sigmaR.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaR, fea, 5, 'N06625_GPSvFEA_sigmaR.pdf',
             'best', r'\textsc{radial stress}, $\sigma_r$')
-    plotFEA(gN06625.r, sN06625.sigmaZ, fea, 6, 'N06625_GPSvFEA_sigmaZ.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaZ, fea, 6, 'N06625_GPSvFEA_sigmaZ.pdf',
             'best', r'\textsc{axial stress}, $\sigma_z$')
-    plotFEA(gN06625.r, sN06625.sigmaRTheta, fea, 7, 'N06625_GPSvFEA_sigmaRTheta.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaRTheta, fea, 7, 'N06625_GPSvFEA_sigmaRTheta.pdf',
             'best', r'\textsc{in-plane shear stress}, $\sigma_{r\theta}$')
-    plotFEA(gN06625.r, sN06625.sigmaEq, fea, 8, 'N06625_GPSvFEA_sigmaEq.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaEq, fea, 8, 'N06625_GPSvFEA_sigmaEq.pdf',
             'best', r'\textsc{equiv. stress}, $\sigma_{\mathrm{Eq}}$')
 
     ## Generalised plane strain with annulled bending:
@@ -1227,6 +1388,6 @@ def ASTRI2():
 
 if __name__ == "__main__":
 
-    # Holms1952()
+    Holms1952()
     # SE6413()
-    ASTRI2()
+    # ASTRI2()

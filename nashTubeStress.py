@@ -166,7 +166,8 @@ class Solver:
     def __init__(self, grid, debug=False, it='inline', CG=8.5e5, 
                  k=20, T_int=723.15, h_int=10e3, U=4.0, R_f=0., A=0.968, 
                  epsilon=0.87, T_ext=293.15, h_ext=30., P_i=0e5, 
-                 alpha=18.5e-6, E=165e9, nu=0.3, n=1, bend=False):
+                 T_0=0., alpha=18.5e-6, E=165e9, nu=0.3, n=1,
+                 bend=False, GPS=True):
         self.debug = debug
         # Class constants and variables (default UNS S31600 @ 450degC):
         self.g = grid
@@ -181,11 +182,13 @@ class Solver:
         self.T_ext = T_ext      # ambient temperature
         self.h_ext = h_ext      # ext convection coefficient (with wind)
         self.P_i = P_i          # internal pipe pressure
+        self.T_0 = T_0          # stress free temperature
         self.alpha = alpha      # thermal expansion coefficienct of tube
         self.E = E              # Modulus of elasticity
         self.nu = nu            # Poisson's coefficient
         self.n = n              # Number of Fourier 'frequencies'
         self.bend = bend        # switch to allow tube bending
+        self.GPS = GPS          # switch to turn off generalised plane strain
         self.meshT = np.ones((grid.nt+2, grid.nr), 'd') * T_int
         self.T = self.meshT[1:-1,:] # remove symm for post-processing
 
@@ -447,6 +450,9 @@ class Solver:
         QZ += alpha * E * ((kappa_theta * (nu / (1 - nu)) * \
                             (2 - ((a2 + b2) / meshR2))) + \
                            kappa_noM - T_theta)
+        # Plane strain override (needs T_0 defined):
+        if not self.GPS:
+            QZ = (nu*(QR + QTheta)) - (E*alpha*(T-self.T_0))
         QRTheta = C * kappa_tau * (1 - (a2 / meshR2)) * (1 - (b2 / meshR2))
         QEq = np.sqrt(0.5 * ((QR - QTheta)**2 + \
                              (QTheta - QZ)**2 + \
@@ -620,6 +626,52 @@ def plotComponentStress(r, sigmaR, sigmaTheta, sigmaZ,
     fig.savefig(filename, transparent=True)
     plt.close(fig)
 
+def plotTIMO(r, s, feaCmp, feaEq, filename):
+    a = r[0,0]; b = r[0,-1]
+    trX = Q_(1, 'inch').to('mm').magnitude
+    trY = Q_(1, 'ksi').to('MPa').magnitude
+    trans = mtransforms.Affine2D().scale(trX,trY)
+    fig = plt.figure(figsize=(4, 3.5))
+    ax = SubplotHost(fig, 1, 1, 1)
+    axa = ax.twin(trans)
+    axa.set_viewlim_mode("transform")
+    axa.axis["top"].set_label('$r$ (in.)')
+    axa.axis["top"].label.set_visible(True)
+    axa.axis["right"].set_label('$\sigma$ (ksi)')
+    axa.axis["right"].label.set_visible(True)
+    ax = fig.add_subplot(ax)
+    ax.plot(r[0,:]*1e3, s.sigmaTheta[0,:]*1e-6, '-', color='C0')
+    ax.plot((a+feaCmp[:,0])*1e3, feaCmp[:,4]*1e-6, 'o', color='C0')
+    ax.plot(r[0,:]*1e3, s.sigmaR[0,:]*1e-6, '-', color='C1')
+    ax.plot((a+feaCmp[:,0])*1e3, feaCmp[:,5]*1e-6, '^', color='C1')
+    ax.plot(r[0,:]*1e3, s.sigmaZ[0,:]*1e-6, '-', color='C2')
+    ax.plot((a+feaCmp[:,0])*1e3, feaCmp[:,6]*1e-6, 'v', color='C2')
+    ax.plot(r[0,:]*1e3, s.sigmaEq[0,:]*1e-6, '-', color='C3')
+    ax.plot((a+feaEq[:,0])*1e3, feaEq[:,1]*1e-6, 's', color='C3')
+    ax.plot(r[0,:]*1e3, s.sigmaRTheta[0,:]*1e-6, '-', color='C4')
+    ax.plot((a+feaCmp[:,0])*1e3, feaCmp[:,7]*1e-6, '+', color='C4')
+    ax.set_xlabel('$r$ (mm)')
+    ax.set_xlim((a*1e3)-10,(b*1e3)+10)
+    ax.set_ylabel('$\sigma$ (MPa)')
+    #ax.set_ylim(-400, 400)
+    c0line = Line2D([], [], color='C0', marker='o',
+                    label=r'$\sigma_\theta$')
+    c1line = Line2D([], [], color='C1', marker='^',
+                    label=r'$\sigma_r$')
+    c2line = Line2D([], [], color='C2', marker='v',
+                    label=r'$\sigma_z$')
+    c3line = Line2D([], [], color='C3', marker='s',
+                    label=r'$\sigma_\mathrm{eq}$')
+    c4line = Line2D([], [], color='C4', marker='+',
+                    label=r'$\sigma_{r\theta}$')
+    handles=[c0line, c1line, c2line, c3line, c4line]
+    labels = [h.get_label() for h in handles]
+    ax.legend([handle for i,handle in enumerate(handles)],
+              [label for i,label in enumerate(labels)], loc='best')
+    fig.tight_layout()
+    fig.savefig(filename, transparent=True)
+    plt.close(fig)
+
 def plotNACA(r, sigma, fea, i, filename, loc, ylabel):
     a = r[0,0]; b = r[0,-1]
     trX = Q_(1, 'inch').to('mm').magnitude
@@ -669,7 +721,7 @@ def plotNACA(r, sigma, fea, i, filename, loc, ylabel):
     fig.tight_layout()
     fig.savefig(filename, transparent=True)
     plt.close(fig)
-
+    
 def plotASTER(r, sigma, fea, i, filename, loc, ylabel):
     fig = plt.figure(figsize=(3.5, 3.5))
     ax = fig.add_subplot(111)
@@ -917,6 +969,60 @@ def SE6413():
                s.sigmaEq.min(), s.sigmaEq.max(),
                'S31609_htc40_sigmaEq.pdf')
 
+def Timoshenko1951():
+    """
+    Timoshenko, S. and Goodier, J. N., 1951. Theory of Elasticity. 
+    McGraw-Hill Book Company, Inc., 2nd edn. 1st ed. 1934.
+    """
+    headerprint(' Case 135 p412 Timoshenko & Goodier, 1951')
+
+    nr=10; nt=32
+    a = 500e-3      # inside tube radius [mm->m]
+    b = 700e-3      # outside tube radius [mm->m]
+
+    E = 200e9
+    valprint('E', E*1e-9, 'GPa')
+    alpha = 1e-5
+    valprint('alpha', alpha*1e6, 'x1e6 K^-1')
+    
+    # Create instance of Grid and Solver to use stress post-processor:
+    GPS = True # generalised plane strain, otherwise simple plane strain?
+    g = Grid(nr=nr, nt=nt, rMin=a, rMax=b)
+    s = Solver(g, debug=True, alpha=alpha, 
+               E=E, nu=0.3, n=1, GPS=GPS)
+    s.T = 100 * ((np.log(g.r / a) / np.log(b / a)))
+    s.postProcessing()
+
+    # plotStress(g.theta, g.r, s.sigmaR,
+    #            s.sigmaR.min(), s.sigmaR.max(), 
+    #            'Timoshenko_sigmaR.pdf')
+    # plotStress(g.theta, g.r, s.sigmaTheta,
+    #            s.sigmaTheta.min(), s.sigmaTheta.max(), 
+    #            'Timoshenko_sigmaTheta.pdf')
+    # plotStress(g.theta, g.r, s.sigmaRTheta, 
+    #            s.sigmaRTheta.min(), s.sigmaRTheta.max(), 
+    #            'Timoshenko_sigmaRTheta.pdf')
+    # plotStress(g.theta, g.r, s.sigmaZ, 
+    #            s.sigmaZ.min(), s.sigmaZ.max(), 
+    #            'Timoshenko_sigmaZ.pdf')
+    # plotStress(g.theta, g.r, s.sigmaEq, 
+    #            s.sigmaEq.min(), s.sigmaEq.max(),
+    #            'Timoshenko_sigmaEq.pdf')
+
+    """ Comparison with code_aster 13.6 MECA_STATIQUE [U4.51.01]: """
+    strain = 'GPS' if GPS else 'SPS'
+    feaCmp = np.genfromtxt(
+        os.path.join('aster', 'TIMOSHENKO-{}'.format(strain)+\
+                     '_THETA0_SIEF-CYL.dat'),
+        skip_header=5
+    )
+    feaEq = np.genfromtxt(
+        os.path.join('aster', 'TIMOSHENKO-{}'.format(strain)+\
+                     '_THETA0_SIEQ.dat'),
+        skip_header=5
+    )
+    plotTIMO(g.r, s, feaCmp, feaEq, 'Timoshenko-{}.pdf'.format(strain))
+
 def Holms1952():
     """
     Holms, A.G., 1952. A biharmonic relaxation method for calculating thermal
@@ -970,7 +1076,7 @@ def Holms1952():
     for r, sig_t in zip(radius_inch, sigmaTheta):
         valprint('{} (in.)'.format(r), sig_t.magnitude, 'psi')
 
-    """ Comparison with FEA -- code_aster 13.6 MECA_STATIQUE [U4.51.01]: """
+    """ Comparison with code_aster 13.6 MECA_STATIQUE [U4.51.01]: """
     fea = [None]*4
     for i, theta in enumerate([0, 60, 120, 180]):
         fn = 'NACA-TR-1059_THETA{}'.format(theta) + \
@@ -1050,7 +1156,7 @@ def ASTRI2():
     ## If post-processing is called before s.solve thermal field is at T_int:
     sN06625.postProcessing()
 
-    """ Comparison with FEA -- code_aster 13.6 MECA_STATIQUE [U4.51.01]: """
+    """ Comparison with code_aster 13.6 MECA_STATIQUE [U4.51.01]: """
     fea = [None]*4
     mesh = 'COURSE' ## radial discretisation of FEA: 'COURSE|FINE'
     for i, theta in enumerate([0, 60, 120, 180]):
@@ -1110,7 +1216,7 @@ def ASTRI2():
                sN06625.sigmaEq.min(), sN06625.sigmaEq.max(),
                'N06625_GPS_sigmaEq.pdf')
 
-    """ Comparison with FEA -- code_aster 13.6 MECA_STATIQUE [U4.51.01]: """
+    """ Comparison with code_aster 13.6 MECA_STATIQUE [U4.51.01]: """
     fea = [None]*4
     mesh = 'COURSE' ## radial discretisation of FEA: 'COURSE|FINE'
     for i, theta in enumerate([0, 60, 120, 180]):
@@ -1388,6 +1494,7 @@ def ASTRI2():
 
 if __name__ == "__main__":
 
-    Holms1952()
+    Timoshenko1951()
+    # Holms1952()
     # SE6413()
     # ASTRI2()

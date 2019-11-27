@@ -27,6 +27,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                        sigma_z: -126.9543 (MPa)
                       sigma_Eq:  126.9543 (MPa)
 </code>
+
 ### Holms1952()
 <code>
 ================== Holms (1952), NACA-TR-1059 ==================

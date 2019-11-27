@@ -920,12 +920,12 @@ def Timoshenko1951():
     """ Comparison with code_aster 13.6 MECA_STATIQUE [U4.51.01]: """
     strain = 'GPS' if GPS else 'SPS'
     feaCmp = np.genfromtxt(
-        os.path.join('aster', 'TIMOSHENKO-{}'.format(strain)+\
+        os.path.join('aster', 'TIMOSHENKO_{}'.format(strain)+\
                      '_THETA0_SIEF-CYL.dat'),
         skip_header=5
     )
     feaEq = np.genfromtxt(
-        os.path.join('aster', 'TIMOSHENKO-{}'.format(strain)+\
+        os.path.join('aster', 'TIMOSHENKO_{}'.format(strain)+\
                      '_THETA0_SIEQ.dat'),
         skip_header=5
     )
@@ -1132,7 +1132,7 @@ def ASTRI2():
     m_t = (pi*b**2-pi*a**2)*rho
 
     ## Thermal constants
-    CG = 7.5e5         # absorbed flux (W/m^2)
+    CG = 7.65e5         # absorbed flux (W/m^2)
     valprint('CG', CG*1e-3, 'kW/m^2')
     mdot = 0.1         # mass flow (kg/s)
     valprint('mdot', mdot, 'kg/s')
@@ -1166,26 +1166,24 @@ def ASTRI2():
 
     """ Comparison with code_aster 13.6 MECA_STATIQUE [U4.51.01]: """
     fea = [None]*4
-    mesh = 'COURSE' ## radial discretisation of FEA: 'COURSE|FINE'
     for i, theta in enumerate([0, 60, 120, 180]):
-        fn = 'N06625_THETA{}'.format(theta) + \
-             '_TSOD615_HTCSOD17394_FLUX750_MESH{}'.format(mesh) + \
-             '_PRONLY.dat'
+        fn = 'N06625_GPS_THETA{}'.format(theta) + \
+             '_PR600_SIEF-CYL.dat'
         fc = np.genfromtxt(os.path.join('aster', fn), skip_header=5)
         seq = np.sqrt(0.5 * ((fc[:,5] - fc[:,4])**2 + \
                             (fc[:,4] - fc[:,6])**2 + \
                             (fc[:,6] - fc[:,5])**2) + \
                      6 * (fc[:,7]**2))
         fea[i] = np.c_[fc, seq]
-    plotASTER(gN06625.r, sN06625.sigmaTheta, fea, 4, 'N06625_GPS-PRvFEA_sigmaTheta.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaTheta, fea, 4, 'N06625_GPS_sigmaTheta_PR_FEA.pdf',
             'best', r'\textsc{hoop stress}, $\sigma_\theta$')
-    plotASTER(gN06625.r, sN06625.sigmaR, fea, 5, 'N06625_GPS-PRvFEA_sigmaR.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaR, fea, 5, 'N06625_GPS_sigmaR_PR_FEA.pdf',
             'best', r'\textsc{radial stress}, $\sigma_r$')
-    plotASTER(gN06625.r, sN06625.sigmaZ, fea, 6, 'N06625_GPS-PRvFEA_sigmaZ.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaZ, fea, 6, 'N06625_GPS_sigmaZ_PR_FEA.pdf',
             'best', r'\textsc{axial stress}, $\sigma_z$')
-    plotASTER(gN06625.r, sN06625.sigmaRTheta, fea, 7, 'N06625_GPS-PRvFEA_sigmaRTheta.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaRTheta, fea, 7, 'N06625_GPS_sigmaRTheta_PR_FEA.pdf',
             'best', r'\textsc{in-plane shear stress}, $\sigma_{r\theta}$')
-    plotASTER(gN06625.r, sN06625.sigmaEq, fea, 8, 'N06625_GPS-PRvFEA_sigmaEq.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaEq, fea, 8, 'N06625_GPS_sigmaEq_PR_FEA.pdf',
             'best', r'\textsc{equiv. stress}, $\sigma_{\mathrm{Eq}}$')
 
     headerprint('Generalised plane strain (thermal only)', ' ')
@@ -1210,42 +1208,41 @@ def ASTRI2():
 
     plotStress(gN06625.theta, gN06625.r, sN06625.sigmaR,
                sN06625.sigmaR.min(), sN06625.sigmaR.max(), 
-               'N06625_GPS_sigmaR.pdf')
+               'N06625_GPS_sigmaR_TH.pdf')
     plotStress(gN06625.theta, gN06625.r, sN06625.sigmaTheta,
                sN06625.sigmaTheta.min(), sN06625.sigmaTheta.max(), 
-               'N06625_GPS_sigmaTheta.pdf')
+               'N06625_GPS_sigmaTheta_TH.pdf')
     plotStress(gN06625.theta, gN06625.r, sN06625.sigmaRTheta, 
                sN06625.sigmaRTheta.min(), sN06625.sigmaRTheta.max(), 
-               'N06625_GPS_sigmaRTheta.pdf')
+               'N06625_GPS_sigmaRTheta_TH.pdf')
     plotStress(gN06625.theta, gN06625.r, sN06625.sigmaZ, 
                sN06625.sigmaZ.min(), sN06625.sigmaZ.max(), 
-               'N06625_GPS_sigmaZ.pdf')
+               'N06625_GPS_sigmaZ_TH.pdf')
     plotStress(gN06625.theta, gN06625.r, sN06625.sigmaEq, 
                sN06625.sigmaEq.min(), sN06625.sigmaEq.max(),
-               'N06625_GPS_sigmaEq.pdf')
+               'N06625_GPS_sigmaEq_TH.pdf')
 
     """ Comparison with code_aster 13.6 MECA_STATIQUE [U4.51.01]: """
     fea = [None]*4
-    mesh = 'COURSE' ## radial discretisation of FEA: 'COURSE|FINE'
     for i, theta in enumerate([0, 60, 120, 180]):
-        fn = 'N06625_THETA{}'.format(theta) + \
-             '_TSOD615_HTCSOD17394_FLUX750_MESH{}'.format(mesh) + \
-             '_THONLY.dat'
+        fn = 'N06625_GPS_THETA{}'.format(theta) + \
+             '_TSOD615_HTCSOD17394_FLUX765' + \
+             '_SIEF-CYL.dat'
         fc = np.genfromtxt(os.path.join('aster', fn), skip_header=5)
         seq = np.sqrt(0.5 * ((fc[:,5] - fc[:,4])**2 + \
                             (fc[:,4] - fc[:,6])**2 + \
                             (fc[:,6] - fc[:,5])**2) + \
                      6 * (fc[:,7]**2))
         fea[i] = np.c_[fc, seq]
-    plotASTER(gN06625.r, sN06625.sigmaTheta, fea, 4, 'N06625_GPSvFEA_sigmaTheta.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaTheta, fea, 4, 'N06625_GPS_sigmaTheta_TH_FEA.pdf',
             'best', r'\textsc{hoop stress}, $\sigma_\theta$')
-    plotASTER(gN06625.r, sN06625.sigmaR, fea, 5, 'N06625_GPSvFEA_sigmaR.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaR, fea, 5, 'N06625_GPS_sigmaR_TH_FEA.pdf',
             'best', r'\textsc{radial stress}, $\sigma_r$')
-    plotASTER(gN06625.r, sN06625.sigmaZ, fea, 6, 'N06625_GPSvFEA_sigmaZ.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaZ, fea, 6, 'N06625_GPS_sigmaZ_TH_FEA.pdf',
             'best', r'\textsc{axial stress}, $\sigma_z$')
-    plotASTER(gN06625.r, sN06625.sigmaRTheta, fea, 7, 'N06625_GPSvFEA_sigmaRTheta.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaRTheta, fea, 7, 'N06625_GPS_sigmaRTheta_TH_FEA.pdf',
             'best', r'\textsc{in-plane shear stress}, $\sigma_{r\theta}$')
-    plotASTER(gN06625.r, sN06625.sigmaEq, fea, 8, 'N06625_GPSvFEA_sigmaEq.pdf',
+    plotASTER(gN06625.r, sN06625.sigmaEq, fea, 8, 'N06625_GPS_sigmaEq_TH_FEA.pdf',
             'best', r'\textsc{equiv. stress}, $\sigma_{\mathrm{Eq}}$')
 
     ## Generalised plane strain with annulled bending:
@@ -1255,19 +1252,19 @@ def ASTRI2():
 
     plotStress(gN06625.theta, gN06625.r, sN06625.sigmaR,
                sN06625.sigmaR.min(), sN06625.sigmaR.max(), 
-               'N06625_GPS-AB_sigmaR.pdf')
+               'N06625_GPS-AB_sigmaR_TH_FEA.pdf')
     plotStress(gN06625.theta, gN06625.r, sN06625.sigmaTheta,
                sN06625.sigmaTheta.min(), sN06625.sigmaTheta.max(), 
-               'N06625_GPS-AB_sigmaTheta.pdf')
+               'N06625_GPS-AB_sigmaTheta_TH_FEA.pdf')
     plotStress(gN06625.theta, gN06625.r, sN06625.sigmaRTheta, 
                sN06625.sigmaRTheta.min(), sN06625.sigmaRTheta.max(), 
-               'N06625_GPS-AB_sigmaRTheta.pdf')
+               'N06625_GPS-AB_sigmaRTheta_TH_FEA.pdf')
     plotStress(gN06625.theta, gN06625.r, sN06625.sigmaZ, 
                sN06625.sigmaZ.min(), sN06625.sigmaZ.max(), 
-               'N06625_GPS-AB_sigmaZ.pdf')
+               'N06625_GPS-AB_sigmaZ_TH_FEA.pdf')
     plotStress(gN06625.theta, gN06625.r, sN06625.sigmaEq, 
                sN06625.sigmaEq.min(), sN06625.sigmaEq.max(),
-               'N06625_GPS-AB_sigmaEq.pdf')
+               'N06625_GPS-AB_sigmaEq_TH_FEA.pdf')
 
     headerprint('Determining peak flux for N06625', ' ')
     mdot = 0.1         # mass flow (kg/s)
@@ -1293,7 +1290,7 @@ def ASTRI2():
                 maxiter=100, tol=1e-2
             )
             T_met[i, j] = np.max(sN06625.T)
-    valprint('Time', time.clock() - t, 'sec')
+    valprint('Time taken', time.clock() - t, 'sec')
     
     fig = plt.figure(figsize=(3.5, 3.5))    
     ax = fig.add_subplot(111)
@@ -1307,8 +1304,8 @@ def ASTRI2():
     ax.set_ylim(0.2, 1.6)
     ax.legend(loc='best')
     fig.tight_layout()
-    fig.savefig('N06625_peakFlux.pdf')
-    fig.savefig('N06625_peakFlux.png', dpi=150)
+    fig.savefig('N06625_OD25-4_WT1-65_peakFlux.pdf')
+    fig.savefig('N06625_OD25-4_WT1-65_peakFlux.png', dpi=150)
     plt.close(fig)
     ## Dump peak flux results to CSV file:
     csv = np.c_[T_int,
@@ -1318,13 +1315,13 @@ def ASTRI2():
                 #T_met[:,3], peakFlux[:,3],
                 T_met[:,3], peakFlux[:,3]
     ]
-    np.savetxt('N06625_peakFlux.csv', csv, delimiter=',',
+    np.savetxt('N06625_OD25-4_WT1-65_peakFlux.csv', csv, delimiter=',',
                header='T_int(K),'+\
-               'T_metal@3f_in_1e2h(K),flux_in_1e2h(MPa),'+\
-               'T_metal@3f_in_1e3h(K),flux_in_1e3h(MPa),'+\
-               'T_metal@3f_in_1e4h(K),flux_in_1e4h(MPa),'+\
-               #'T_metal@3f_in_1e5h(K),flux_in_1e5h(MPa),'+\
-               'T_metal@3Sm(K),flux_in_Sm(MPa)'
+               'T_metal@3f_in_1e2h(K),flux_in_1e2h(W/(m^2.K)),'+\
+               'T_metal@3f_in_1e3h(K),flux_in_1e3h(W/(m^2.K)),'+\
+               'T_metal@3f_in_1e4h(K),flux_in_1e4h(W/(m^2.K)),'+\
+               #'T_metal@3f_in_1e5h(K),flux_in_1e5h(W/(m^2.K)),'+\
+               'T_metal@3Sm(K),flux_in_Sm(W/(m^2.K))'
     )
 
     headerprint(' 33.4mm OD x 1.32mm WT N06320 at 650 degC ')
@@ -1347,7 +1344,7 @@ def ASTRI2():
     m_t = (pi*b**2-pi*a**2)*rho
 
     ## Thermal constants
-    CG = 7.5e5         # absorbed flux (W/m^2)
+    CG = 7.65e5         # absorbed flux (W/m^2)
     valprint('CG', CG*1e-3, 'kW/m^2')
     mdot = 0.1         # mass flow (kg/s)
     valprint('mdot', mdot, 'kg/s')
@@ -1400,7 +1397,7 @@ def ASTRI2():
                 maxiter=100, tol=1e-2
             )
             T_met[i, j] = np.max(sN06230.T)
-    valprint('Time', time.clock() - t, 'sec')
+    valprint('Time taken', time.clock() - t, 'sec')
     
     fig = plt.figure(figsize=(3.5, 3.5))    
     ax = fig.add_subplot(111)
@@ -1413,8 +1410,8 @@ def ASTRI2():
     ax.set_ylim(0.2, 1.6)
     ax.legend(loc='best')
     fig.tight_layout()
-    fig.savefig('N06230_peakFlux.pdf')
-    fig.savefig('N06230_peakFlux.png', dpi=150)
+    fig.savefig('N06230_OD33-4_WT1-32_peakFlux.pdf')
+    fig.savefig('N06230_OD33-4_WT1-32_peakFlux.png', dpi=150)
     plt.close(fig)
     ## Dump peak flux results to CSV file:
     csv = np.c_[T_int,
@@ -1423,15 +1420,15 @@ def ASTRI2():
                 T_met[:,2], peakFlux[:,2],
                 T_met[:,3], peakFlux[:,3]
     ]
-    np.savetxt('N06230_peakFlux.csv', csv, delimiter=',',
+    np.savetxt('N06230_OD33-4_WT1-32_peakFlux.csv', csv, delimiter=',',
                header='T_int(K),'+\
-               'T_metal@3f_in_1e2h(K),flux_in_1e2h(MPa),'+\
-               'T_metal@3f_in_1e3h(K),flux_in_1e3h(MPa),'+\
-               'T_metal@3f_in_1e4h(K),flux_in_1e4h(MPa),'+\
-               'T_metal@3Sm(K),flux_in_Sm(MPa)'
+               'T_metal@3f_in_1e2h(K),flux_in_1e2h(W/(m^2.K)),'+\
+               'T_metal@3f_in_1e3h(K),flux_in_1e3h(W/(m^2.K)),'+\
+               'T_metal@3f_in_1e4h(K),flux_in_1e4h(W/(m^2.K)),'+\
+               'T_metal@3Sm(K),flux_in_Sm(W/(m^2.K))'
     )
 
-    headerprint(' COMPARISON OF N06625 AND N06230 ')
+    #headerprint(' COMPARISON OF N06625 AND N06230 ')
 
     ## Sensitivity of heat transfer coefficient (pressure drop) and stress to mass-flow
     T_int = 888; sodium.update(T_int)
@@ -1481,8 +1478,8 @@ def ASTRI2():
     #ax1.legend(loc='best')
     ax1.legend(loc='best', handles=[N06625_m, N06230_m])
     #fig.tight_layout()
-    #fig.savefig('N06625andN06230_mdot-intConv.pdf')
-    #fig.savefig('N06625andN06230_mdot-intConv.png', dpi=150)
+    #fig.savefig('N06625vN06230_mdot-intConv.pdf')
+    #fig.savefig('N06625vN06230_mdot-intConv.png', dpi=150)
     plt.close(fig)
     ## plot of mdot vs maximum equivalent stress
     #fig = plt.figure(figsize=(3.5, 3.5))
@@ -1493,16 +1490,16 @@ def ASTRI2():
     ax3.set_ylabel(r'\textsc{max. equivalent stress}, $\max\sigma_\mathrm{Eq}$ (MPa)')
     ax3.legend(loc='best')
     fig.tight_layout()
-    #fig.savefig('N06625andN06230_mdot-sigmaEq.pdf')
-    fig.savefig('N06625andN06230_mdot.pdf')
-    #fig.savefig('N06625andN06230_mdot-sigmaEq.png', dpi=150)
+    #fig.savefig('N06625vN06230_mdot-sigmaEq.pdf')
+    fig.savefig('N06625vN06230_mdot.pdf')
+    #fig.savefig('N06625vN06230_mdot-sigmaEq.png', dpi=150)
     plt.close(fig)
 
 ##################################### MAIN #####################################
 
 if __name__ == "__main__":
 
-    # Timoshenko1951()
-    # Holms1952()
+    Timoshenko1951()
+    Holms1952()
     SE6413()
-    # ASTRI2()
+    ASTRI2()

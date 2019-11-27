@@ -6,6 +6,27 @@ As described in journal paper:
 ### Thermoelastic stress in concentrating solar receiver tubes: A retrospect on stress analysis methodology, and comparison of salt and sodium
 Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
 
+### Timoshenko1951()
+<code>
+=========== Case 135 p412 Timoshenko & Goodier, 1951 ===========
+
+                             E:  200.0000 (GPa)
+                         alpha:  10.0000 (x1e6 K^-1)
+                        Tbar_i:  0.0000 (K)
+                          B'_1:  0.0000 (K)
+                          D'_1:  0.0000 (K)
+                        Tbar_o:  100.0000 (K)
+                         B''_1: -0.0000 (K)
+                         D''_1:  0.0000 (K)
+
+                  Stress at outside tube crown:                 
+
+                       sigma_r:  0.0000 (MPa)
+                  sigma_rTheta:  0.0000 (MPa)
+                   sigma_theta: -126.9543 (MPa)
+                       sigma_z: -126.9543 (MPa)
+                      sigma_Eq:  126.9543 (MPa)
+</code>
 ### Holms1952()
 <code>
 ================== Holms (1952), NACA-TR-1059 ==================
@@ -42,44 +63,78 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
 
 ### SE6413()
 <code>
-================ NPS Sch. 5S 1" SS316 at 450degC ===============
+=============== NPS Sch. 5S 1" S31609 at 450degC ===============
 
 
-                        HTC: 10e3 W/m^s/K                       
+                          Nitrate Salt                          
 
-                        Tbar_i:  750.2038 (K)
-                          B'_1:  41.8341 (K)
+                             T:  723.1500 (K)
+                           rho:  1803.8000 (kg/m^3)
+                            Cp:  1520.4000 (m^2/s^2/K)
+                            mu:  1472.4232 (x1e6 kg/m/s)
+                         kappa:  0.5285 (kg*m/s^3/K)
+                            Pr:  4.2359 (-)
+                             U:  3.8960 (m/s)
+                          mdot:  5.0000 (kg/s)
+                            Re:  143651.3945 (-)
+                            Pe:  608492.6747 (-)
+                        deltaP: -7589.5960 (Pa/m)
+                           HCR:  7602.0000 (J/K/s)
+                         h_int:  9613.0515 (W/m^2/K)
+                            Bi:  0.7936 (-)
+
+                   HTC: 9613.05152527 W/m^s/K                   
+
+                        Tbar_i:  750.0697 (K)
+                          B'_1:  44.9933 (K)
                           D'_1:  0.0000 (K)
-                        Tbar_o:  771.5014 (K)
-                         B''_1:  75.0273 (K)
+                        Tbar_o:  770.4418 (K)
+                         B''_1:  79.3203 (K)
                          D''_1: -0.0000 (K)
 
                   Stress at outside tube crown:                 
 
                        sigma_r:  0.0000 (MPa)
                   sigma_rTheta: -0.0000 (MPa)
-                   sigma_theta: -102.1835 (MPa)
-                       sigma_z: -378.2248 (MPa)
-                      sigma_Eq:  338.8910 (MPa)
-                          Time:  0.1137 (sec)
+                   sigma_theta: -101.7681 (MPa)
+                       sigma_z: -389.8666 (MPa)
+                      sigma_Eq:  350.2524 (MPa)
+                          Time:  0.1098 (sec)
 
-                        HTC: 40e3 W/m^s/K                       
+                          Liquid Sodium                         
 
-                        Tbar_i:  729.9837 (K)
-                          B'_1:  10.6652 (K)
-                          D'_1: -0.0000 (K)
-                        Tbar_o:  751.5017 (K)
-                         B''_1:  44.3586 (K)
-                         D''_1:  0.0000 (K)
+                             T:  723.1500 (K)
+                           rho:  846.2179 (kg/m^3)
+                            Cp:  1272.2439 (m^2/s^2/K)
+                            mu:  254.4561 (x1e6 kg/m/s)
+                         kappa:  66.7702 (kg*m/s^3/K)
+                            Pr:  0.0048 (-)
+                             U:  6.6437 (m/s)
+                          mdot:  4.0000 (kg/s)
+                            Re:  664996.9491 (-)
+                            Pe:  3224.1846 (-)
+                        deltaP: -7742.9078 (Pa/m)
+                           HCR:  5088.9755 (J/K/s)
+                         h_int:  43402.8029 (W/m^2/K)
+                            Bi:  3.5829 (-)
+
+                   HTC: 43402.8029066 W/m^s/K                   
+
+                        Tbar_i:  729.1806 (K)
+                          B'_1:  10.1771 (K)
+                          D'_1:  0.0000 (K)
+                        Tbar_o:  749.7852 (K)
+                         B''_1:  45.0594 (K)
+                         D''_1: -0.0000 (K)
 
                   Stress at outside tube crown:                 
 
                        sigma_r:  0.0000 (MPa)
-                  sigma_rTheta:  0.0000 (MPa)
-                   sigma_theta: -110.4248 (MPa)
-                       sigma_z: -253.2035 (MPa)
-                      sigma_Eq:  219.8765 (MPa)
-                          Time:  0.0517 (sec)
+                  sigma_rTheta: -0.0000 (MPa)
+                   sigma_theta: -110.9377 (MPa)
+                       sigma_z: -252.2070 (MPa)
+                      sigma_Eq:  218.9436 (MPa)
+                          Time:  0.0475 (sec)
 </code>
 
 ### ASTRI2()
@@ -91,8 +146,9 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                              k:  19.1000 (kg*m/s^3/K)
                          alpha:  18.2000 (x1e6 K^-1)
                              E:  169.0000 (GPa)
+                           TSP:  161.0366 (kPa.m/W)
                             nu:  0.3100 (-)
-                            CG:  750.0000 (kW/m^2)
+                            CG:  765.0000 (kW/m^2)
                           mdot:  0.1000 (kg/s)
 
                           Liquid Sodium                         
@@ -133,42 +189,42 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
 
              Generalised plane strain (thermal only)            
 
-                        Tbar_i:  903.7004 (K)
-                          B'_1:  23.8937 (K)
+                        Tbar_i:  904.0144 (K)
+                          B'_1:  24.3716 (K)
                           D'_1: -0.0000 (K)
-                        Tbar_o:  925.7961 (K)
-                         B''_1:  57.8371 (K)
-                         D''_1: -0.0000 (K)
+                        Tbar_o:  926.5520 (K)
+                         B''_1:  58.9939 (K)
+                         D''_1:  0.0000 (K)
 
                   Stress at outside tube crown:                 
 
                        sigma_r:  0.0000 (MPa)
-                  sigma_rTheta: -0.0000 (MPa)
-                   sigma_theta: -105.3066 (MPa)
-                       sigma_z: -306.6446 (MPa)
-                      sigma_Eq:  269.8679 (MPa)
-                          Time:  0.1011 (sec)
+                  sigma_rTheta:  0.0000 (MPa)
+                   sigma_theta: -107.4128 (MPa)
+                       sigma_z: -312.7775 (MPa)
+                      sigma_Eq:  275.2653 (MPa)
+                          Time:  0.0951 (sec)
 
       Generalised plane strain with annulled bending moment     
 
-                        Tbar_i:  903.7004 (K)
-                          B'_1:  23.8937 (K)
+                        Tbar_i:  904.0144 (K)
+                          B'_1:  24.3716 (K)
                           D'_1: -0.0000 (K)
-                        Tbar_o:  925.7961 (K)
-                         B''_1:  57.8371 (K)
-                         D''_1: -0.0000 (K)
+                        Tbar_o:  926.5520 (K)
+                         B''_1:  58.9939 (K)
+                         D''_1:  0.0000 (K)
 
                   Stress at outside tube crown:                 
 
                        sigma_r:  0.0000 (MPa)
-                  sigma_rTheta: -0.0000 (MPa)
-                   sigma_theta: -105.3066 (MPa)
-                       sigma_z: -169.0042 (MPa)
-                      sigma_Eq:  147.8331 (MPa)
+                  sigma_rTheta:  0.0000 (MPa)
+                   sigma_theta: -107.4128 (MPa)
+                       sigma_z: -172.3842 (MPa)
+                      sigma_Eq:  150.7898 (MPa)
 
                 Determining peak flux for N06625                
 
-                          Time:  24.7906 (sec)
+                    Time taken:  23.2500 (sec)
 
 =========== 33.4mm OD x 1.32mm WT N06320 at 650 degC ===========
 
@@ -177,8 +233,9 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                              k:  21.4000 (kg*m/s^3/K)
                          alpha:  16.5000 (x1e6 K^-1)
                              E:  172.0000 (GPa)
+                           TSP:  132.6168 (kPa.m/W)
                             nu:  0.3100 (-)
-                            CG:  750.0000 (kW/m^2)
+                            CG:  765.0000 (kW/m^2)
                           mdot:  0.1000 (kg/s)
 
                           Liquid Sodium                         
@@ -202,7 +259,5 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
 
                 Determining peak flux for N06230                
 
-                          Time:  32.9860 (sec)
-
-================ COMPARISON OF N06625 AND N06230 ===============
+                    Time taken:  30.7456 (sec)
 </code>

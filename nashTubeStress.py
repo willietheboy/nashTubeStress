@@ -39,6 +39,7 @@ Q_ = UR_.Quantity
 # Plotting:
 import matplotlib as mpl # version 2.2.3
 import matplotlib.pyplot as plt
+## uncomment following if not in ~/.config/matplotlib/matplotlibrc
 #params = {'text.latex.preamble': [r'\usepackage{newtxtext,newtxmath,siunitx}']}
 #plt.rcParams.update(params)
 mpl.rc('figure.subplot', bottom=0.13, top=0.95)
@@ -1252,22 +1253,22 @@ def ASTRI2():
 
     plotStress(gN06625.theta, gN06625.r, sN06625.sigmaR,
                sN06625.sigmaR.min(), sN06625.sigmaR.max(), 
-               'N06625_GPS-AB_sigmaR_TH_FEA.pdf')
+               'N06625_GPS-AB_sigmaR_TH.pdf')
     plotStress(gN06625.theta, gN06625.r, sN06625.sigmaTheta,
                sN06625.sigmaTheta.min(), sN06625.sigmaTheta.max(), 
-               'N06625_GPS-AB_sigmaTheta_TH_FEA.pdf')
+               'N06625_GPS-AB_sigmaTheta_TH.pdf')
     plotStress(gN06625.theta, gN06625.r, sN06625.sigmaRTheta, 
                sN06625.sigmaRTheta.min(), sN06625.sigmaRTheta.max(), 
-               'N06625_GPS-AB_sigmaRTheta_TH_FEA.pdf')
+               'N06625_GPS-AB_sigmaRTheta_TH.pdf')
     plotStress(gN06625.theta, gN06625.r, sN06625.sigmaZ, 
                sN06625.sigmaZ.min(), sN06625.sigmaZ.max(), 
-               'N06625_GPS-AB_sigmaZ_TH_FEA.pdf')
+               'N06625_GPS-AB_sigmaZ_TH.pdf')
     plotStress(gN06625.theta, gN06625.r, sN06625.sigmaEq, 
                sN06625.sigmaEq.min(), sN06625.sigmaEq.max(),
-               'N06625_GPS-AB_sigmaEq_TH_FEA.pdf')
+               'N06625_GPS-AB_sigmaEq_TH.pdf')
 
     headerprint('Determining peak flux for N06625', ' ')
-    mdot = 0.1         # mass flow (kg/s)
+    mdot = 0.2         # mass flow (kg/s)
     sN06625.debug = False; sN06625.bend = False
     sodium.debug = False
     fv = np.genfromtxt(os.path.join('mats', 'N06625_f-values.dat'), delimiter=',')
@@ -1374,7 +1375,7 @@ def ASTRI2():
     sN06230.intBC = sN06230.tubeIntConv
 
     headerprint('Determining peak flux for N06230', ' ')
-    mdot = 0.1         # mass flow (kg/s)
+    mdot = 0.2         # mass flow (kg/s)
     sN06230.debug = False
     sodium.debug = False
     fv = np.genfromtxt(os.path.join('mats', 'N06230_f-values.dat'), delimiter=',')
@@ -1394,7 +1395,7 @@ def ASTRI2():
             peakFlux[i, j] = opt.newton(
                 findFlux, 1e5,
                 args=(sN06230, fv, j+1, 'outside'),
-                maxiter=100, tol=1e-2
+                maxiter=1000, tol=1e-2
             )
             T_met[i, j] = np.max(sN06230.T)
     valprint('Time taken', time.clock() - t, 'sec')
@@ -1458,14 +1459,14 @@ def ASTRI2():
         ret = sN06230.solve(eps=1e-6)
         sN06230.postProcessing()
         sig_N06230[i] = sN06230.sigmaEq[0,-1]
-    fig = plt.figure(figsize=(6, 6))
-    ax1 = fig.add_subplot(211)
-    c1 = 'C0'; c2 = 'C1'
+    fig = plt.figure(figsize=(4, 3.5))
+    ax1 = fig.add_subplot(111)
+    c1 = 'C2'; c2 = 'C3'
     N06625_m = Line2D([], [], marker='o', color='k', label='N06625')
     N06230_m = Line2D([], [], marker='x', color='k', label='N06230')
     ax1.plot(mdot, h_N06625*1e-3, 'o-', color=c1, markevery=5)
     ax1.plot(mdot, h_N06230*1e-3, 'x-', color=c1, markevery=5)
-    #ax1.set_xlabel(r'\textsc{mass flow}, $\dot{m}$ (\si{\kilo\gram\per\second})')
+    ax1.set_xlabel(r'\textsc{mass flow}, $\dot{m}$ (\si{\kilo\gram\per\second})')
     ax1.set_ylabel(r'\textsc{int. heat transfer}, $h_\mathrm{int}$ ' + \
                    '(\si{\kilo\watt\per\meter\squared\per\kelvin})', color=c1)
     ax1.tick_params(axis='y', labelcolor=c1)
@@ -1475,23 +1476,23 @@ def ASTRI2():
     ax2.set_ylabel(r'\textsc{pressure drop}, $\Delta P$' + \
                    ' (\si{\kilo\pascal\per\meter})', color=c2)
     ax2.tick_params(axis='y', labelcolor=c2)
-    #ax1.legend(loc='best')
+    ax1.legend(loc='best')
     ax1.legend(loc='best', handles=[N06625_m, N06230_m])
-    #fig.tight_layout()
-    #fig.savefig('N06625vN06230_mdot-intConv.pdf')
+    fig.tight_layout()
+    fig.savefig('N06625vN06230_mdot-intConv.pdf')
     #fig.savefig('N06625vN06230_mdot-intConv.png', dpi=150)
     plt.close(fig)
     ## plot of mdot vs maximum equivalent stress
-    #fig = plt.figure(figsize=(3.5, 3.5))
-    ax3 = fig.add_subplot(212)
+    fig = plt.figure(figsize=(3.5, 3.5))
+    ax3 = fig.add_subplot(111)
     ax3.plot(mdot, sig_N06625*1e-6, 'o-', label='N06625', markevery=5)
     ax3.plot(mdot, sig_N06230*1e-6, 'x-', label='N06230', markevery=5)
     ax3.set_xlabel(r'\textsc{mass flow}, $\dot{m}$ (\si{\kilo\gram\per\second})')
     ax3.set_ylabel(r'\textsc{max. equivalent stress}, $\max\sigma_\mathrm{Eq}$ (MPa)')
     ax3.legend(loc='best')
     fig.tight_layout()
-    #fig.savefig('N06625vN06230_mdot-sigmaEq.pdf')
-    fig.savefig('N06625vN06230_mdot.pdf')
+    fig.savefig('N06625vN06230_mdot-sigmaEq.pdf')
+    #fig.savefig('N06625vN06230_mdot.pdf')
     #fig.savefig('N06625vN06230_mdot-sigmaEq.png', dpi=150)
     plt.close(fig)
 
@@ -1499,7 +1500,7 @@ def ASTRI2():
 
 if __name__ == "__main__":
 
-    Timoshenko1951()
-    Holms1952()
-    SE6413()
+    # Timoshenko1951()
+    # Holms1952()
+    # SE6413()
     ASTRI2()

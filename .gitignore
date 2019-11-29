@@ -9,3 +9,6 @@
 
 # Python compiled
 *.pyc
+
+# Any archives left around
+*.zip

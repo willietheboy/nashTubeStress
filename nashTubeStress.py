@@ -65,7 +65,7 @@ class liquidSodium:
     def __init__ (self, debug):
         self.debug = debug
         if debug==True:
-            headerprint('Liquid Sodium', ' ')
+            headerprint('Liquid Sodium', '_')
 
     def update (self, T):
         self.T = T
@@ -100,7 +100,7 @@ class nitrateSalt:
     def __init__ (self, debug):
         self.debug = debug
         if debug==True:
-            headerprint('Nitrate Salt', ' ')
+            headerprint('Nitrate Salt', '_')
 
     def update (self, T):
         self.T = min(T, 873.15) # K
@@ -311,7 +311,9 @@ class Solver:
         return count
 
     def postProcessing(self):
+        self.heatFluxBalance()
         self.stress()
+        self.babcockAndWilcoxStress()
         return
 
     ############################ BOUNDARY CONDITIONS ###########################
@@ -386,6 +388,25 @@ class Solver:
             / (1 + (self.g.dr * U / self.k))
 
     ############################## POST-PROCESSING #############################
+
+    def heatFluxBalance(self):
+        """ Calculate the heat flux for inner and outer tube surfaces """
+        self.qDot_int = self.k * (self.T[:,0] - self.T[:,1]) \
+                        / self.g.dr
+        self.q_int = - self.g.sfRmin * self.qDot_int
+        self.qDot_ext = self.k * (self.T[:,-1] - self.T[:,-2]) \
+                        / self.g.dr
+        self.q_ext = self.g.sfRmax * self.qDot_ext
+        # tube efficiency eta_tube:
+        self.qDot_inc = - self.heatFluxInc[1:-1]
+        self.q_inc = self.g.sfRmax * self.qDot_inc
+        self.eta_tube = abs(np.sum(self.q_int) / np.sum(self.q_inc))
+        if self.debug:
+            headerprint('Tube heat balance:', ' ')
+            valprint('sum(phi_q->to)', np.sum(self.q_inc)*1e-3, 'kW/m')
+            valprint('sum(phi_q,to->ti)', np.sum(self.q_ext)*1e-3, 'kW/m')
+            valprint('sum(phi_q,ti->f)', np.sum(self.q_int)*1e-3, 'kW/m')
+            valprint('eta_t', self.eta_tube*1e2, '%')
 
     def stress(self):
         """ The Timoshenko & Goodier approach (dating back to 1937):
@@ -484,6 +505,7 @@ class Solver:
         self.sigmaZ = sigmaZ[self.g.nt-1:,:]
         self.sigmaEq = sigmaEq[self.g.nt-1:,:]
         if self.debug:
+            headerprint('Biharmonic coefficients:', ' ')
             valprint('Tbar_i', Tbar_i, 'K')
             valprint('B\'_1', BP, 'K')
             valprint('D\'_1', DP, 'K')
@@ -497,10 +519,59 @@ class Solver:
             valprint('sigma_z', self.sigmaZ[0,-1]*1e-6, 'MPa')
             valprint('sigma_Eq', self.sigmaEq[0,-1]*1e-6, 'MPa')
 
+    def babcockAndWilcoxStress(self):
+        """ Kistler (1987), Kolb (2011) from Babcock & Wilcox (1984) 
+        -- 'G' refers to Goodier (1937a,b)
+        """
+        A, CG = self.A, self.CG
+        T_int, k, h_int = self.T_int, self.k, np.average(self.h_int)
+        a, b = self.g.a, self.g.b
+        alpha, E, nu = self.alpha, self.E, self.nu
+        Tbar_i = self.popt1[0]; BP = self.popt1[1]; DP = self.popt1[2];
+        Tbar_o = self.popt2[0]; BPP = self.popt2[1]; DPP = self.popt2[2];
+        T_ci = T_int + ((A*CG*(b/a)) / h_int)
+        T_co = T_ci + A*CG * (b/k) * log(b/a)
+        T_mc = (T_ci + T_co) / 2.
+        T_m = T_int + (1 / np.pi) * (T_mc - T_int)
+        sigmaR = 0.0
+        sigmaTheta = alpha * E * ((T_co - T_ci) / (2*(1-nu)))
+        sigmaThetaG = - ((alpha * E) / (2*(1-nu))) \
+                      * ((Tbar_o - Tbar_i) \
+                         + np.sqrt((BPP - BP)**2 + (DPP - DP)**2))
+        sigmaZ = alpha * E * (T_mc - T_m) 
+        sigmaZG = alpha * E * (- 0.5*(T_ci + T_co) \
+                               + 0.5*(T_ci - T_co) + 0.5*(Tbar_i + Tbar_o))# \
+        sigmaBnW = sigmaZ + sigmaTheta
+        sigmaEq = np.sqrt(0.5 * ((sigmaR - sigmaTheta)**2 + \
+                                 (sigmaTheta - sigmaZ)**2 + \
+                                 (sigmaZ - sigmaR)**2))
+        sigmaEqG = np.sqrt(0.5 * ((sigmaR - sigmaThetaG)**2 + \
+                                 (sigmaThetaG - sigmaZG)**2 + \
+                                 (sigmaZG - sigmaR)**2))
+        sigmaCheck = alpha * E * (0.954*(T_co - T_int) + \
+                                  0.523*(T_co - T_ci)) / 1.4
+        if self.debug:
+            headerprint('Babcock \& Wilcox (1984), SAND82-8178:', ' ')
+            valprint('T_m', T_m, 'K')
+            valprint('T_mc', T_mc, 'K')
+            valprint('T_co', T_co, 'K')
+            valprint('T_co - T_ci', T_co-T_ci, 'dT')
+            valprint('T_ci', T_ci, 'K')
+            valprint('h_int', h_int*1e-3, 'kW/m^2')
+            valprint('sigmaR', sigmaR*1e-6, 'MPa')
+            valprint('sigmaTheta', sigmaTheta*1e-6, 'MPa')
+            valprint('sigmaThetaG', sigmaThetaG*1e-6, 'MPa')
+            valprint('sigmaZ', sigmaZ*1e-6, 'MPa')
+            valprint('sigmaZG', sigmaZG*1e-6, 'MPa')
+            valprint('sigmaEq', sigmaEq*1e-6, 'MPa')
+            valprint('sigmaEqG', sigmaEqG*1e-6, 'MPa')
+            valprint('sigmaB\&W', sigmaBnW*1e-6, 'MPa')
+            valprint('sigmaCheck', sigmaCheck*1e-6, 'MPa')
+
 ################################### PLOTTING ###################################
 
 def plotTemperatureAnnotate(theta, r, T, TMin, TMax, filename):
-    fig = plt.figure(figsize=(3.5, 3.5))
+    fig = plt.figure(figsize=(3, 3.25))
     fig.subplots_adjust(left=-1)
     fig.subplots_adjust(right=1)
     fig.subplots_adjust(bottom=0.1)
@@ -522,7 +593,7 @@ def plotTemperatureAnnotate(theta, r, T, TMin, TMax, filename):
     for i in range(5, len(gridlines)):
         gridlines[i].set_visible(False)
         ticklabels[i].set_visible(False)
-    ax.annotate(r'${0:.0f}$'.format(T.max()-273.15)+' (\si{\celsius})', \
+    ax.annotate(r'\SI{'+'{0:.0f}'.format(T.max()-273.15)+'}{\celsius}', \
                  xy=(theta[0,-1], r[0,-1]), \
                  xycoords='data', xytext=(40, 10), \
                  textcoords='offset points', fontsize=12, \
@@ -590,7 +661,7 @@ def plotStressAnnotate(theta, r, sigma, sigmaMin, sigmaMax, annSide, filename):
         ticklabels[i].set_visible(False)
     #annInd = np.unravel_index(s.sigmaEq.argmax(), s.sigmaEq.shape)
     annInd = (0, -1)
-    ax.annotate('${0:.0f}$ (MPa)'.format(np.max(sigma*1e-6)), \
+    ax.annotate('\SI{'+'{0:.0f}'.format(np.max(sigma*1e-6))+'}{\mega\pascal}', \
                  xy=(theta[annInd], r[annInd]), \
                  xycoords='data', xytext=(annSide, 10), \
                  textcoords='offset points', fontsize=12, \
@@ -1015,7 +1086,7 @@ def SE6413():
     
     headerprint(' NPS Sch. 5S 1" S31609 at 450degC ')
 
-    nr=12; nt=91
+    nr=30; nt=91
     a = 30.098/2e3     # inside tube radius [mm->m]
     b = 33.4/2e3       # outside tube radius [mm->m]
 
@@ -1024,7 +1095,7 @@ def SE6413():
 
     """ Create instance of LaplaceSolver: """
     s = Solver(g, debug=True, CG=0.85e6, k=20, T_int=723.15, R_f=0,
-               A=0.968, epsilon=0.87, T_ext=293.15, h_ext=20., 
+               A=0.968, epsilon=0.87, T_ext=293.15, h_ext=30., 
                P_i=0e5, alpha=18.5e-6, E=165e9, nu=0.31, n=1,
                bend=False)
 
@@ -1502,5 +1573,5 @@ if __name__ == "__main__":
 
     # Timoshenko1951()
     # Holms1952()
-    # SE6413()
-    ASTRI2()
+    SE6413()
+    # ASTRI2()

@@ -19,7 +19,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                          B''_1: -0.0000 (K)
                          D''_1:  0.0000 (K)
 
-                  Stress at outside tube crown:                 
+                  Stress at outside tube crown:
 
                        sigma_r:  0.0000 (MPa)
                   sigma_rTheta:  0.0000 (MPa)
@@ -41,7 +41,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                          B''_1:  555.5556 (K)
                          D''_1:  0.0000 (K)
 
-                  Stress at outside tube crown:                 
+                  Stress at outside tube crown:
 
                        sigma_r:  0.0000 (MPa)
                   sigma_rTheta:  0.0000 (MPa)
@@ -49,7 +49,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                        sigma_z: -1234.2440 (MPa)
                       sigma_Eq:  1098.1029 (MPa)
 
-           Table II, p89: radius vs. tangential stress          
+           Table II, p89: radius vs. tangential stress
 
                      4.0 (in.):  126988.0387 (psi)
                      5.0 (in.):  69864.6296 (psi)
@@ -67,7 +67,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
 =============== NPS Sch. 5S 1" S31609 at 450degC ===============
 
 
-                          Nitrate Salt                          
+__________________________Nitrate Salt__________________________
 
                              T:  723.1500 (K)
                            rho:  1803.8000 (kg/m^3)
@@ -84,25 +84,25 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                          h_int:  9613.0515 (W/m^2/K)
                             Bi:  0.7936 (-)
 
-                   HTC: 9613.05152527 W/m^s/K                   
+                    Biharmonic coefficients:
 
-                        Tbar_i:  750.0697 (K)
-                          B'_1:  44.9933 (K)
-                          D'_1:  0.0000 (K)
-                        Tbar_o:  770.4418 (K)
-                         B''_1:  79.3203 (K)
-                         D''_1: -0.0000 (K)
+                        Tbar_i:  749.6892 (K)
+                          B'_1:  45.1191 (K)
+                          D'_1: -0.0000 (K)
+                        Tbar_o:  769.7119 (K)
+                         B''_1:  79.4518 (K)
+                         D''_1:  0.0000 (K)
 
-                  Stress at outside tube crown:                 
+                  Stress at outside tube crown:
 
                        sigma_r:  0.0000 (MPa)
-                  sigma_rTheta: -0.0000 (MPa)
-                   sigma_theta: -101.7681 (MPa)
-                       sigma_z: -389.8666 (MPa)
-                      sigma_Eq:  350.2524 (MPa)
-                          Time:  0.1098 (sec)
+                  sigma_rTheta:  0.0000 (MPa)
+                   sigma_theta: -101.0056 (MPa)
+                       sigma_z: -389.5197 (MPa)
+                      sigma_Eq:  350.1201 (MPa)
+                          Time:  1.0306 (sec)
 
-                          Liquid Sodium                         
+__________________________Liquid Sodium_________________________
 
                              T:  723.1500 (K)
                            rho:  846.2179 (kg/m^3)
@@ -119,23 +119,23 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                          h_int:  43402.8029 (W/m^2/K)
                             Bi:  3.5829 (-)
 
-                   HTC: 43402.8029066 W/m^s/K                   
+                    Biharmonic coefficients:
 
-                        Tbar_i:  729.1806 (K)
-                          B'_1:  10.1771 (K)
-                          D'_1:  0.0000 (K)
-                        Tbar_o:  749.7852 (K)
-                         B''_1:  45.0594 (K)
-                         D''_1: -0.0000 (K)
+                        Tbar_i:  729.1010 (K)
+                          B'_1:  10.2208 (K)
+                          D'_1: -0.0000 (K)
+                        Tbar_o:  749.3712 (K)
+                         B''_1:  45.1490 (K)
+                         D''_1:  0.0000 (K)
 
-                  Stress at outside tube crown:                 
+                  Stress at outside tube crown:
 
                        sigma_r:  0.0000 (MPa)
-                  sigma_rTheta: -0.0000 (MPa)
-                   sigma_theta: -110.9377 (MPa)
-                       sigma_z: -252.2070 (MPa)
-                      sigma_Eq:  218.9436 (MPa)
-                          Time:  0.0475 (sec)
+                  sigma_rTheta:  0.0000 (MPa)
+                   sigma_theta: -110.3052 (MPa)
+                       sigma_z: -251.8567 (MPa)
+                      sigma_Eq:  218.6731 (MPa)
+                          Time:  0.4356 (sec)
 </code>
 
 ### ASTRI2()
@@ -152,7 +152,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                             CG:  765.0000 (kW/m^2)
                           mdot:  0.1000 (kg/s)
 
-                          Liquid Sodium                         
+                          Liquid Sodium
 
                              T:  888.0000 (K)
                            rho:  807.6339 (kg/m^3)
@@ -171,7 +171,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                    dead-weight:  1.3489 (kg/m)
                            P_i:  6.0000 (bar (x1e-5 Pa))
 
-            Generalised plane strain (pressure only)            
+            Generalised plane strain (pressure only)
 
                         Tbar_i:  888.0000 (K)
                           B'_1:  0.0000 (K)
@@ -180,7 +180,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                          B''_1:  0.0000 (K)
                          D''_1: -0.0000 (K)
 
-                  Stress at outside tube crown:                 
+                  Stress at outside tube crown:
 
                        sigma_r:  0.0000 (MPa)
                   sigma_rTheta:  0.0000 (MPa)
@@ -188,7 +188,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                        sigma_z:  0.0000 (MPa)
                       sigma_Eq:  3.7390 (MPa)
 
-             Generalised plane strain (thermal only)            
+             Generalised plane strain (thermal only)
 
                         Tbar_i:  904.0144 (K)
                           B'_1:  24.3716 (K)
@@ -197,7 +197,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                          B''_1:  58.9939 (K)
                          D''_1:  0.0000 (K)
 
-                  Stress at outside tube crown:                 
+                  Stress at outside tube crown:
 
                        sigma_r:  0.0000 (MPa)
                   sigma_rTheta:  0.0000 (MPa)
@@ -206,7 +206,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                       sigma_Eq:  275.2653 (MPa)
                           Time:  0.0951 (sec)
 
-      Generalised plane strain with annulled bending moment     
+      Generalised plane strain with annulled bending moment
 
                         Tbar_i:  904.0144 (K)
                           B'_1:  24.3716 (K)
@@ -215,7 +215,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                          B''_1:  58.9939 (K)
                          D''_1:  0.0000 (K)
 
-                  Stress at outside tube crown:                 
+                  Stress at outside tube crown:
 
                        sigma_r:  0.0000 (MPa)
                   sigma_rTheta:  0.0000 (MPa)
@@ -223,7 +223,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                        sigma_z: -172.3842 (MPa)
                       sigma_Eq:  150.7898 (MPa)
 
-                Determining peak flux for N06625                
+                Determining peak flux for N06625
 
                     Time taken:  23.2500 (sec)
 
@@ -239,7 +239,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                             CG:  765.0000 (kW/m^2)
                           mdot:  0.1000 (kg/s)
 
-                          Liquid Sodium                         
+                          Liquid Sodium
 
                              T:  888.0000 (K)
                            rho:  807.6339 (kg/m^3)
@@ -258,7 +258,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                    dead-weight:  1.6937 (kg/m)
                            P_i:  0.0000 (bar (x1e-5 Pa))
 
-                Determining peak flux for N06230                
+                Determining peak flux for N06230
 
                     Time taken:  30.7456 (sec)
 </code>

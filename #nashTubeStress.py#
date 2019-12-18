@@ -1195,7 +1195,7 @@ def SE6413():
                        s.sigmaEq.min(), s.sigmaEq.max(),
                        'right', 'S31609_nitrateSalt_sigmaEq.pdf')
 
-    sodium = liquidSodium(True); sodium.update(723.15)
+   sodium = liquidSodium(True); sodium.update(723.15)
     h_int, dP = HTC(True, sodium, a, b, 20, 'Skupinski', 'mdot', 4)
     s.h_int = h_int
     t = time.clock(); ret = s.solve(eps=1e-6); s.postProcessing()

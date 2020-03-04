@@ -2194,7 +2194,7 @@ def ASTRI2():
     ## Thermal constants
     CG = 7.65e5         # absorbed flux (W/m^2)
     valprint('CG', CG*1e-3, 'kW/m^2')
-    mdot = 8.0         # mass flow (kg/s)
+    mdot = 5.0         # mass flow (kg/s)
     valprint('mdot', mdot, 'kg/s')
     T_int = 973        # bulk sodium temperature (K)
     sodium = liquidSodium(True); sodium.update(T_int)
@@ -2221,7 +2221,6 @@ def ASTRI2():
     """ Internal BC: """
     sN07740.intBC = sN07740.intTubeConv
 
-    headerprint('Determining peak flux on N07740 at mdot={} kg/s...'.format(mdot), ' ')
     sN07740.debug = False
     sodium.debug = False
     fv = np.genfromtxt(os.path.join('mats', 'N07740_f-values.dat'), delimiter=',')
@@ -2230,49 +2229,95 @@ def ASTRI2():
     #nfv = 4 # f in 1e2, 1e3 and 1e4 hours, as well as ASME S_m
     nfv = 1 # f as ASME S_m
     T_int = np.linspace(500, 750, 11)+273.15
-    T_met = np.zeros([len(T_int), nfv])
-    peakFlux = np.zeros([len(T_int), nfv])
-    t = time.clock()
-    for i in xrange(len(T_int)):
-        sN07740.T_int = T_int[i]
-        sodium.update(T_int[i])
-        sN07740.h_int, dP = HTC(False, sodium, a, b, k, 'Chen', 'mdot', mdot)
-        for j in range(nfv):
-            peakFlux[i, j] = opt.newton(
+
+    m = 20
+    T_met = np.zeros([len(T_int), m])
+    peakFlux = np.zeros([len(T_int), m])
+    for n, mdot in enumerate(np.linspace(1, 20, m)):
+        headerprint('Determining peak flux on N07740 at mdot={} kg/s...'.format(mdot), ' ')
+        t = time.clock()
+        for i in xrange(len(T_int)):
+            sN07740.T_int = T_int[i]
+            sodium.update(T_int[i])
+            sN07740.h_int, dP = HTC(False, sodium, a, b, k, 'Chen', 'mdot', mdot)
+            #for j in range(nfv):
+            peakFlux[i, n] = opt.newton(
                 findFlux, 1e5,
-                args=(sN07740, fv, j+1, 'outside'),
+                args=(sN07740, fv, 1, 'outside'),
                 maxiter=1000, tol=1e-3
             )
-            T_met[i, j] = np.max(sN07740.T)
-    valprint('Time taken', time.clock() - t, 'sec')
+            T_met[i, n] = np.max(sN07740.T)
+        valprint('Time taken', time.clock() - t, 'sec')
 
-    fig = plt.figure(figsize=(3.5, 3.5))
-    ax = fig.add_subplot(111)
-    ax.plot(T_int-273.15,peakFlux[:,0]*1e-6,
-            label=r'$f=S_\mathrm{m}$', color='k', linewidth=1.5)
-    ax.set_xlabel(r'\textsc{sodium temperature}, $T_\mathrm{bulk}$ (\si{\celsius})')
-    ax.set_ylabel(r'\textsc{peak net (absorbed) flux}, (\si{\mega\watt\per\meter\squared})')
-    #ax.set_ylim(0.2, 1.6)
-    ax.legend(loc='best')
-    fig.tight_layout()
-    fig.savefig(
-        'N07740_OD33-4_WT1-32_peakFlux_mdot{}.pdf'.format(int(mdot)),
-        transparent=True
-    )
-    fig.savefig(
-        'N07740_OD33-4_WT1-32_peakFlux_mdot{}.png'.format(int(mdot)),
-        dpi=150
-    )
-    plt.close(fig)
+    # fig = plt.figure(figsize=(3.5, 3.5))
+    # ax = fig.add_subplot(111)
+    # ax.plot(T_int-273.15,peakFlux[:,0]*1e-6,
+    #         label=r'$f=S_\mathrm{m}$', color='k', linewidth=1.5)
+    # ax.set_xlabel(r'\textsc{sodium temperature}, $T_\mathrm{bulk}$ (\si{\celsius})')
+    # ax.set_ylabel(r'\textsc{peak net (absorbed) flux}, (\si{\mega\watt\per\meter\squared})')
+    # #ax.set_ylim(0.2, 1.6)
+    # ax.legend(loc='best')
+    # fig.tight_layout()
+    # fig.savefig(
+    #     'N07740_OD33-4_WT1-32_peakFlux_mdot{}.pdf'.format(int(mdot)),
+    #     transparent=True
+    # )
+    # fig.savefig(
+    #     'N07740_OD33-4_WT1-32_peakFlux_mdot{}.png'.format(int(mdot)),
+    #     dpi=150
+    # )
+    # plt.close(fig)
     ## Dump peak flux results to CSV file:
-    csv = np.c_[T_int,
-                T_met[:,0], peakFlux[:,0],
+    csv = np.c_[
+        T_int,
+        #T_met[:,0], peakFlux[:,0],
+        peakFlux[:,0],
+        peakFlux[:,1],
+        peakFlux[:,2],
+        peakFlux[:,3],
+        peakFlux[:,4],
+        peakFlux[:,5],
+        peakFlux[:,6],
+        peakFlux[:,7],
+        peakFlux[:,8],
+        peakFlux[:,9],
+        peakFlux[:,10],
+        peakFlux[:,11],
+        peakFlux[:,12],
+        peakFlux[:,13],
+        peakFlux[:,14],
+        peakFlux[:,15],
+        peakFlux[:,16],
+        peakFlux[:,17],
+        peakFlux[:,18],
+        peakFlux[:,19]
     ]
     np.savetxt(
-        'N07740_OD33-4_WT1-32_peakFlux_mdot{}.csv'.format(int(mdot)),
+        #'N07740_OD60-3_WT1-2_peakFlux_mdot{}.csv'.format(int(mdot)),
+        'N07740_OD60-3_WT1-2_peakFlux_mdot.csv'.format(int(mdot)),
         csv, delimiter=',',
         header='T_int(K),'+\
-        'T_metal@3Sm(K),flux_net@Sm(W/(m^2.K))'
+        #'T_metal@3Sm(K),flux_net@Sm(W/(m^2.K))'
+        'flux_net@mdot=1,'+\
+        'flux_net@mdot=2,'+\
+        'flux_net@mdot=3,'+\
+        'flux_net@mdot=4,'+\
+        'flux_net@mdot=5,'+\
+        'flux_net@mdot=6,'+\
+        'flux_net@mdot=7,'+\
+        'flux_net@mdot=8,'+\
+        'flux_net@mdot=9,'+\
+        'flux_net@mdot=10,'+\
+        'flux_net@mdot=11,'+\
+        'flux_net@mdot=12,'+\
+        'flux_net@mdot=13,'+\
+        'flux_net@mdot=14,'+\
+        'flux_net@mdot=15,'+\
+        'flux_net@mdot=16,'+\
+        'flux_net@mdot=17,'+\
+        'flux_net@mdot=18,'+\
+        'flux_net@mdot=19,'+\
+        'flux_net@mdot=20'
     )
 
 ##################################### MAIN #####################################

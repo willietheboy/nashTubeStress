@@ -2172,13 +2172,13 @@ def ASTRI2():
     # #fig.savefig('N06625vN06230_mdot-sigmaEq.png', dpi=150)
     # plt.close(fig)
 
-    headerprint(' 60.3mm OD x 1.2mm WT N07740 at 750 degC ')
 
     ## Material constants
-    b = 60.3e-3/2.     # inside tube radius (mm->m)
-    valprint('b', b*1e3, 'mm')
-    a = b - 1.2e-3    # outside tube radius (mm->m)
+    b = 30.4e-3/2.     # inside tube radius (mm->m)
+    a = b - 1.65e-3    # outside tube radius (mm->m)
+    headerprint(' {0}mm OD x {1}mm WT N07740 at 750 degC '.format(b*2e3, (b-a)*1e3))
     valprint('a', a*1e3, 'mm')
+    valprint('b', b*1e3, 'mm')
     k = 21.15           # thermal conductivity (kg*m/s^3/K)
     valprint('k', k, 'kg*m/s^3/K')
     alpha = 19.035e-6  # thermal dilation (K^-1)
@@ -2228,13 +2228,14 @@ def ASTRI2():
     fv[:,1:] *= 3e6 # apply 3f criteria and convert MPa->Pa
     #nfv = 4 # f in 1e2, 1e3 and 1e4 hours, as well as ASME S_m
     nfv = 1 # f as ASME S_m
-    T_int = np.linspace(500, 750, 11)+273.15
+    T_int = np.linspace(500, 800, 13)+273.15
 
-    m = 20
+    m = 10
     T_met = np.zeros([len(T_int), m])
     peakFlux = np.zeros([len(T_int), m])
-    for n, mdot in enumerate(np.linspace(1, 20, m)):
-        headerprint('Determining peak flux on N07740 at mdot={} kg/s...'.format(mdot), ' ')
+    mdots = np.logspace(np.log10(0.1), np.log10(5), m)
+    for n, mdot in enumerate(mdots):
+        headerprint('Determining flux limit on N07740 at mdot={} kg/s...'.format(mdot), ' ')
         t = time.clock()
         for i in xrange(len(T_int)):
             sN07740.T_int = T_int[i]
@@ -2281,43 +2282,43 @@ def ASTRI2():
         peakFlux[:,7],
         peakFlux[:,8],
         peakFlux[:,9],
-        peakFlux[:,10],
-        peakFlux[:,11],
-        peakFlux[:,12],
-        peakFlux[:,13],
-        peakFlux[:,14],
-        peakFlux[:,15],
-        peakFlux[:,16],
-        peakFlux[:,17],
-        peakFlux[:,18],
-        peakFlux[:,19]
+        # peakFlux[:,10],
+        # peakFlux[:,11],
+        # peakFlux[:,12],
+        # peakFlux[:,13],
+        # peakFlux[:,14],
+        # peakFlux[:,15],
+        # peakFlux[:,16],
+        # peakFlux[:,17],
+        # peakFlux[:,18],
+        # peakFlux[:,19]
     ]
     np.savetxt(
         #'N07740_OD60-3_WT1-2_peakFlux_mdot{}.csv'.format(int(mdot)),
-        'N07740_OD60-3_WT1-2_peakFlux_mdot.csv'.format(int(mdot)),
+        'N07740_OD{0}_WT{1}_peakFlux_mdot.csv'.format(b*2e3, (b-a)*1e3),
         csv, delimiter=',',
         header='T_int(K),'+\
         #'T_metal@3Sm(K),flux_net@Sm(W/(m^2.K))'
-        'flux_net@mdot=1,'+\
-        'flux_net@mdot=2,'+\
-        'flux_net@mdot=3,'+\
-        'flux_net@mdot=4,'+\
-        'flux_net@mdot=5,'+\
-        'flux_net@mdot=6,'+\
-        'flux_net@mdot=7,'+\
-        'flux_net@mdot=8,'+\
-        'flux_net@mdot=9,'+\
-        'flux_net@mdot=10,'+\
-        'flux_net@mdot=11,'+\
-        'flux_net@mdot=12,'+\
-        'flux_net@mdot=13,'+\
-        'flux_net@mdot=14,'+\
-        'flux_net@mdot=15,'+\
-        'flux_net@mdot=16,'+\
-        'flux_net@mdot=17,'+\
-        'flux_net@mdot=18,'+\
-        'flux_net@mdot=19,'+\
-        'flux_net@mdot=20'
+        'flux_net@mdot={},'.format(mdots[0])+\
+        'flux_net@mdot={},'.format(mdots[1])+\
+        'flux_net@mdot={},'.format(mdots[2])+\
+        'flux_net@mdot={},'.format(mdots[3])+\
+        'flux_net@mdot={},'.format(mdots[4])+\
+        'flux_net@mdot={},'.format(mdots[5])+\
+        'flux_net@mdot={},'.format(mdots[6])+\
+        'flux_net@mdot={},'.format(mdots[7])+\
+        'flux_net@mdot={},'.format(mdots[8])+\
+        'flux_net@mdot={},'.format(mdots[9])#+\
+        # 'flux_net@mdot=11,'+\
+        # 'flux_net@mdot=12,'+\
+        # 'flux_net@mdot=13,'+\
+        # 'flux_net@mdot=14,'+\
+        # 'flux_net@mdot=15,'+\
+        # 'flux_net@mdot=16,'+\
+        # 'flux_net@mdot=17,'+\
+        # 'flux_net@mdot=18,'+\
+        # 'flux_net@mdot=19,'+\
+        # 'flux_net@mdot=20'
     )
 
 ##################################### MAIN #####################################

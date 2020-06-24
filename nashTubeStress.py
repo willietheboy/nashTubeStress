@@ -60,6 +60,11 @@ class liquidSodium:
     """
     Usage: thermo = liquidSodium()
            thermo.update(T) # T in [K]
+
+    Fink, J. K. and Leibowitz, L., 1995. Thermodynamic and transport properties
+    of sodium liquid and vapor. Technical Report ANL/RE-95/2,
+    Reactor Engineering Division, Argonne National Laboratory,
+    Chicago. doi:10.2172/94649.
     """
     def __init__ (self, debug):
         self.debug = debug
@@ -95,6 +100,10 @@ class nitrateSalt:
     """
     Usage: thermo = nitrateSalt()
            thermo.update(T) # T in [K]
+
+    Zavoico, A. B., 2001. Solar power tower design basis document.
+    Technical Report SAND2001-2100, Sandia National Laboratories,
+    Albuquerque, NM. doi:10.2172/786629.
     """
     def __init__ (self, debug):
         self.debug = debug
@@ -120,6 +129,35 @@ class nitrateSalt:
             valprint('mu', self.mu*1e6, 'x1e6 kg/m/s')
             valprint('kappa', self.kappa, 'kg*m/s^3/K')
             valprint('Pr', self.Pr)
+
+class chlorideSalt:
+    """
+    Usage: thermo = chlorideSalt()
+           thermo.update(T) # T in [K]
+
+    NREL (Janna Martinek mailto:janna.martinek@nrel.gov)
+    """
+    def __init__ (self, debug):
+        self.debug = debug
+        if debug==True:
+            headerprint('Ternary Chloride Salt', '_')
+
+    def update (self, T):
+        self.T = T # K
+        self.rho = 2124 - 0.579*self.T # kg/m^3
+        self.Cp = 1412 - 0.448*self.T # m^2/s^2/K
+        self.mu = 6.891e-4 * exp(1225/self.T) # kg/m/s
+        self.kappa = 1.16 - 0.00146*self.T + \
+                     7.15e-7*pow(self.T,2) # kg*m/s^3/K
+        self.nu = self.mu / self.rho
+        self.alpha = self.kappa / (self.rho * self.Cp)
+        self.Pr = self.nu / self.alpha
+        if self.debug==True:
+            print '\trho : {} [kg/m^3]'.format(self.rho)
+            print '\tCp : {} [m^2/s^2/K]'.format(self.Cp)
+            print '\tmu : {} [kg/m/s]'.format(self.mu)
+            print '\tkappa : {} [kg*m/s^3/K]'.format(self.kappa)
+            print '\tPr : {} [-]'.format(self.Pr)
 
 class Grid:
 
@@ -540,6 +578,9 @@ class Solver:
         self.sigmaZ = sigmaZ[self.g.nt-1:,:]
         self.sigmaEq = sigmaEq[self.g.nt-1:,:]
         if self.debug:
+            headerprint('Tube temperatures', ' ')
+            valprint('max T', np.max(self.T)-273.15, 'C')
+            valprint('min T', np.min(self.T)-273.15, 'C')
             headerprint('Biharmonic coefficients:', ' ')
             valprint('Tbar_i', Tbar_i, 'K')
             valprint('B\'_1', BP, 'K')
@@ -935,8 +976,8 @@ def HTC(debug, thermo, a, b, k, correlation, mode, arg):
     else: sys.exit('Mode: {} not recognised'.format(mode))
     Re = U * d_i / thermo.nu # Reynolds
     Pe = Re * thermo.Pr # Peclet
-    f = pow(0.790 * np.log(Re) - 1.64, -2)
-    DP_f = -f * (0.5 * thermo.rho * pow(U, 2)) \
+    f = pow(1.82 * np.log10(Re) - 1.64, -2)
+    DP_f = f * (0.5 * thermo.rho * pow(U, 2)) \
               / d_i # kg/m/s^2 for a metre of pipe!
     # if isinstance(thermo, liquidSodium):
     if correlation == 'Dittus':
@@ -954,6 +995,19 @@ def HTC(debug, thermo, a, b, k, correlation, mode, arg):
         # Chen and Chiou:
         # https://doi.org/10.1016/0017-9310(81)90167-8
         Nu = 5.6 + 0.0165 * pow(Pe, 0.85) * pow(thermo.Pr, 0.01)
+    elif correlation == 'Petukhov':
+        # Petukhov:
+        # https://doi.org/10.1016/S0065-2717(08)70153-9
+        Nu = sys.ecit("Correlation not yet implemented - try Gnielinski!")
+    elif correlation == 'Gnielinski':
+        # V. Gnielinski, New Equations for Heat and Mass Transfer
+        # in Turbulent Pipe and Channel Flow,
+        # International Chemical Engineering,
+        # Vol. 16, No. 2, 1976, pp. 359-68.
+        if thermo.Pr < 1.5:
+            Nu = 0.0214*(pow(Re, 0.8) - 100)*pow(thermo.Pr, 0.4)
+        else:
+            Nu = 0.012*(pow(Re, 0.87) - 280)*pow(thermo.Pr, 0.4)
     else: sys.exit('Correlation: {} not recognised'.format(correlation))
     h = Nu * thermo.kappa / d_i
     Bi = (t * h) / k
@@ -1137,8 +1191,7 @@ def SE6413():
     https://doi.org/10.1016/j.solener.2017.12.003
     """
 
-    headerprint(' NPS Sch. 5S 1" S31609 at 450degC ')
-
+    headerprint(' NPS Sch. 5S 1" S31609 at 550degC ')
     nr=30; nt=91
     a = 30.098/2e3     # inside tube radius [mm->m]
     b = 33.4/2e3       # outside tube radius [mm->m]
@@ -1147,9 +1200,9 @@ def SE6413():
     g = Grid(nr=nr, nt=nt, rMin=a, rMax=b) # nr, nt -> resolution
 
     """ Create instance of LaplaceSolver: """
-    s = Solver(g, debug=True, CG=0.85e6, k=20, T_int=723.15, R_f=0,
+    s = Solver(g, debug=True, CG=0.85e6, k=20.9, T_int=723.15, R_f=0,
                A=0.968, epsilon=0.87, T_ext=293.15, h_ext=30.,
-               P_i=0e5, alpha=18.5e-6, E=165e9, nu=0.31, n=1,
+               P_i=0e5, alpha=18.6e-6, E=156e9, nu=0.31, n=1,
                bend=False)
 
     """ Any of the properties defined above can be changed, e.g.: """
@@ -1778,6 +1831,83 @@ def SE6413():
     # fig.savefig('S31609_sensitivityFluxProfiles.pdf', transparent=True)
     # plt.close(fig)
 
+    b = 19.05/2e3         # outside tube radius [mm->m]
+    a = (b-1.2446e-3)     # inside tube radius [mm->m]
+    g = Grid(nr=nr, nt=nt, rMin=a, rMax=b) # nr, nt -> resolution
+    #headerprint('Reproducing Kistler (1987) for S31609', ' ')
+    # s = Solver(g, debug=False, CG=0.85e6, k=20.9, T_int=723.15, R_f=0,
+    #            A=0.968, epsilon=0.87, T_ext=293.15, h_ext=30.,
+    #            P_i=0e5, alpha=18.6e-6, E=156e9, nu=0.31, n=1,
+    #            bend=False)
+    headerprint('Reproducing Kistler (1987) for K90901', ' ')
+    s = Solver(g, debug=False, CG=0.85e6, k=27.8, T_int=723.15, R_f=0,
+               A=0.968, epsilon=0.87, T_ext=293.15, h_ext=30.,
+               P_i=0e5, alpha=12.5e-6, E=145e9, nu=0.3, n=1,
+               bend=False)
+    s.extBC = s.extTubeHalfCosFluxRadConv
+    s.intBC = s.intTubeConv
+    #s.debug = False
+    sodium.debug = False; salt.debug = False
+    #fv = np.genfromtxt(os.path.join('mats', 'S31609'), delimiter=';')
+    fv = np.genfromtxt(os.path.join('mats', 'K90901'), delimiter=';')
+    fv[:,0] += 273.15 # degC to K
+    fv[:,2] *= 3e6 # apply 3f criteria to Sm and convert MPa->Pa
+    T_int = np.linspace(290, 565, 12)+273.15
+    TSod_met = np.zeros(len(T_int))
+    fluxSod = np.zeros(len(T_int))
+    TSalt_met = np.zeros(len(T_int))
+    fluxSalt = np.zeros(len(T_int))
+    t = time.clock()
+    for i in xrange(len(T_int)):
+        s.T_int = T_int[i]
+        sodium.update(T_int[i])
+        s.h_int, dP = HTC(False, sodium, a, b, 20, 'Chen', 'velocity', 4)
+        fluxSod[i] = opt.newton(
+            findFlux, 1e5,
+            args=(s, fv, 2, 'outside'),
+            maxiter=1000, tol=1e-2
+        )
+        TSod_met[i] = np.max(s.T)
+        salt.update(T_int[i])
+        s.h_int, dP = HTC(False, salt, a, b, 20, 'Dittus', 'velocity', 4)
+        fluxSalt[i] = opt.newton(
+            findFlux, 1e5,
+            args=(s, fv, 2, 'outside'),
+            maxiter=1000, tol=1e-2
+        )
+        TSalt_met[i] = np.max(s.T)
+    valprint('Time taken', time.clock() - t, 'sec')
+
+    fig = plt.figure(figsize=(3.5, 3.5))
+    ax = fig.add_subplot(111)
+    ax.plot(T_int-273.15,fluxSod*1e-6, label=r'Sodium')
+    ax.plot(T_int-273.15,fluxSalt*1e-6, label=r'Nitrate salt')
+    ax.set_xlabel(r'\textsc{fluid temperature}, $T_\mathrm{f}$ (\si{\celsius})')
+    ax.set_ylabel(
+        r'\textsc{incident flux}, $\vec{\phi_\mathrm{q}}$ '+\
+        '(\si{\mega\watt\per\meter\squared})'
+    )
+    #ax.set_ylim(0.2, 1.6)
+    ax.legend(loc='best')
+    fig.tight_layout()
+    # fig.savefig('S31609_OD33-4_WT1-65_peakFlux.pdf', transparent=True)
+    # fig.savefig('S31609_OD33-4_WT1-65_peakFlux.png', dpi=150)
+    # fig.savefig('S31609_OD19_WT1-24_peakFlux.pdf', transparent=True)
+    # fig.savefig('S31609_OD19_WT1-24_peakFlux.png', dpi=150)
+    fig.savefig('K90901_OD19_WT1-24_peakFlux.pdf', transparent=True)
+    fig.savefig('K90901_OD19_WT1-24_peakFlux.png', dpi=150)
+    plt.close(fig)
+    ## Dump peak flux results to CSV file:
+    csv = np.c_[T_int,
+                TSod_met, fluxSod,
+                TSalt_met, fluxSalt,
+    ]
+    # np.savetxt('S31609_OD33-4_WT1-65_peakFlux.csv', csv, delimiter=',',
+    #            header='T_int(K),'+\
+    #            'TSod_metal(K),fluxSod(W/(m^2.K))'+\
+    #            'TSalt_metal(K),fluxSalt(W/(m^2.K))'
+    # )
+
 def ASTRI2():
     """
     Peak flux reference point in advanced CSP prototypes using:
@@ -2353,5 +2483,5 @@ if __name__ == "__main__":
 
     # Timoshenko1951()
     # Holms1952()
-    # SE6413()
-    ASTRI2()
+    SE6413()
+    # ASTRI2()

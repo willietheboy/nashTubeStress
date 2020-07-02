@@ -2112,7 +2112,7 @@ def ASTRI2():
             label=r'$f$ \textsc{in} \SI{10000}{\hour}')
     #ax.plot(T_int-273.15,peakFlux[:,3]*1e-6, label=r'$f$ \textsc{in} \SI{100000}{\hour}')
     ax.plot(T_int-273.15,peakFlux[:,3]*1e-6,
-            label=r'$f=S_\mathrm{m}$', color='k', linewidth=1.5)
+            label=r'$S$', color='k', linewidth=1.5)
     ax.set_xlabel(r'\textsc{sodium temperature}, $T_\mathrm{bulk}$ (\si{\celsius})')
     ax.set_ylabel(r'\textsc{peak net (absorbed) flux}, (\si{\mega\watt\per\meter\squared})')
     ax.set_ylim(0.2, 1.6)
@@ -2236,7 +2236,7 @@ def ASTRI2():
     ax.plot(T_int-273.15,peakFlux[:,2]*1e-6,
             label=r'$f$ \textsc{in} \SI{10000}{\hour}')
     ax.plot(T_int-273.15,peakFlux[:,3]*1e-6,
-            label=r'$f=S_\mathrm{m}$', color='k', linewidth=1.5)
+            label=r'$S$', color='k', linewidth=1.5)
     ax.set_xlabel(r'\textsc{sodium temperature}, $T_\mathrm{bulk}$ (\si{\celsius})')
     #ax.set_xlabel(r'\textsc{nitrate salt temperature}, $T_\mathrm{bulk}$ (\si{\celsius})')
     ax.set_ylabel(r'\textsc{peak net (absorbed) flux}, (\si{\mega\watt\per\meter\squared})')

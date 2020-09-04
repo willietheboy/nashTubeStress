@@ -2624,7 +2624,8 @@ def SolarPACES2020():
     sN07740.intBC = sN07740.intTubeConv
 
     """ Internal fluid (currently Sodium or Salt)"""
-    fluid = 'Salt' # 'Sodium|Salt'
+    fluid = 'Sodium' # 'Sodium|Salt'
+
     if fluid == 'Sodium':
         sodium = liquidSodium(True); sodium.update(973) # 700degC
         h_int, dP = HTC(True, sodium, a, b, k, 'Chen', 'mdot', 7)
@@ -2641,75 +2642,75 @@ def SolarPACES2020():
              m_t+m_f, 'kg/m'
     )
 
-    # """
-    # PEAK FLUX USING ASME VIII DIV. 2 ELASTIC RATCHET ANALYSIS METHOD:
-    # """
-    # ## ASME VIII S/S_m III S_o allowable stress:
-    # fv = np.genfromtxt(
-    #     os.path.join('mats', 'N07740_f-values.dat'), delimiter=','
-    # )
-    # fv[:,0] += 273.15 # degC to K
-    # fv[:,1:] *= 3e6 # apply 3f criteria and convert MPa->Pa
-    # #nfv = 4 # f in 1e2, 1e3 and 1e4 hours, as well as ASME S_m
-    # nfv = 1 # f as ASME S_m
-    # T_int = np.linspace(500, 740, 13)+273.15
+    """
+    PEAK FLUX USING ASME VIII DIV. 2 ELASTIC RATCHET ANALYSIS METHOD:
+    """
+    ## ASME VIII S/S_m III S_o allowable stress:
+    fv = np.genfromtxt(
+        os.path.join('mats', 'N07740_f-values.dat'), delimiter=','
+    )
+    fv[:,0] += 273.15 # degC to K
+    fv[:,1:] *= 3e6 # apply 3f criteria and convert MPa->Pa
+    #nfv = 4 # f in 1e2, 1e3 and 1e4 hours, as well as ASME S_m
+    nfv = 1 # f as ASME S_m
+    T_int = np.linspace(500, 740, 13)+273.15
 
-    # m = 3
-    # ## include tube temperature in results (CSV)
-    # T_t = np.zeros([len(T_int), m])
-    # peakFlux = np.zeros([len(T_int), m])
-    # for n, mdot in enumerate(mdots):
-    #     headerprint(
-    #         'Determining flux limit (3xS_o) on '+\
-    #         '{0} at mdot={1} kg/s'.format(fluid, mdot), ' '
-    #     )
-    #     for i in range(len(T_int)):
-    #         sN07740.T_int = T_int[i]
-    #         if fluid == 'Sodium':
-    #             sodium.update(T_int[i])
-    #             sN07740.h_int, dP = HTC(
-    #                 False, sodium, a, b, k, 'Chen', 'mdot', mdot
-    #             )
-    #         elif fluid == 'Salt':
-    #             salt.update(T_int[i])
-    #             sN07740.h_int, dP = HTC(
-    #                 False, salt, a, b, k, 'Dittus', 'mdot', mdot
-    #             )
-    #         peakFlux[i, n] = opt.newton(
-    #             findFlux, 1e5,
-    #             args=(sN07740, fv, 1, 'outside'),
-    #             maxiter=1000, tol=1e-3
-    #         )
-    #         T_t[i, n] = np.max(sN07740.T)
+    m = 3
+    ## include tube temperature in results (CSV)
+    T_t = np.zeros([len(T_int), m])
+    peakFlux = np.zeros([len(T_int), m])
+    for n, mdot in enumerate(mdots):
+        headerprint(
+            'Determining flux limit (3xS_o) on '+\
+            '{0} at mdot={1} kg/s'.format(fluid, mdot), ' '
+        )
+        for i in range(len(T_int)):
+            sN07740.T_int = T_int[i]
+            if fluid == 'Sodium':
+                sodium.update(T_int[i])
+                sN07740.h_int, dP = HTC(
+                    False, sodium, a, b, k, 'Chen', 'mdot', mdot
+                )
+            elif fluid == 'Salt':
+                salt.update(T_int[i])
+                sN07740.h_int, dP = HTC(
+                    False, salt, a, b, k, 'Dittus', 'mdot', mdot
+                )
+            peakFlux[i, n] = opt.newton(
+                findFlux, 1e5,
+                args=(sN07740, fv, 1, 'outside'),
+                maxiter=1000, tol=1e-3
+            )
+            T_t[i, n] = np.max(sN07740.T)
 
-    # fig = plt.figure(figsize=(3.5, 3.5))
-    # ax = fig.add_subplot(111)
-    # for n, mdot in enumerate(mdots):
-    #     ax.plot(T_int-273.15,peakFlux[:,n]*1e-6,
-    #             label=r'$\dot{m}=\SI{'+'{0:.2g}'.format(mdot)+\
-    #             r'}{\kilo\gram\per\second}$'
-    #     )
-    # if fluid == 'Sodium':
-    #     ax.set_xlabel(r'\textsc{sodium temperature}, '+\
-    #                   '$T_\mathrm{f}$ (\si{\celsius})'
-    #     )
-    # elif fluid == 'Salt':
-    #     ax.set_xlabel(r'\textsc{chloride salt temperature}, '+\
-    #                   '$T_\mathrm{f}$ (\si{\celsius})')
-    # ax.set_ylabel(r'\textsc{flux density}, $\vec{\phi_\mathrm{q}}$' +\
-    #               r' (\si{\mega\watt\per\meter\squared})')
-    # #ax.set_ylim(0.2, 1.6)
-    # ax.legend(loc='best')
-    # fig.tight_layout()
+    fig = plt.figure(figsize=(3.5, 3.5))
+    ax = fig.add_subplot(111)
+    for n, mdot in enumerate(mdots):
+        ax.plot(T_int-273.15,peakFlux[:,n]*1e-6,
+                label=r'$\dot{m}=\SI{'+'{0:.2g}'.format(mdot)+\
+                r'}{\kilo\gram\per\second}$'
+        )
+    if fluid == 'Sodium':
+        ax.set_xlabel(r'\textsc{sodium temperature}, '+\
+                      '$T_\mathrm{f}$ (\si{\celsius})'
+        )
+    elif fluid == 'Salt':
+        ax.set_xlabel(r'\textsc{chloride salt temperature}, '+\
+                      '$T_\mathrm{f}$ (\si{\celsius})')
+    ax.set_ylabel(r'\textsc{flux density}, $\vec{\phi_\mathrm{q}}$' +\
+                  r' (\si{\mega\watt\per\meter\squared})')
+    #ax.set_ylim(0.2, 1.6)
+    ax.legend(loc='best')
+    fig.tight_layout()
+    fig.savefig(
+        'N07740_OD60_WT1-2_peakFlux{}.pdf'.format(fluid),
+        transparent=True
+    )
     # fig.savefig(
-    #     'N07740_OD60_WT1-2_peakFlux{}.pdf'.format(fluid),
-    #     transparent=True
+    #     'N07740_OD60_WT1-2_peakFlux.png',
+    #     dpi=150
     # )
-    # # fig.savefig(
-    # #     'N07740_OD60_WT1-2_peakFlux.png',
-    # #     dpi=150
-    # # )
-    # plt.close(fig)
+    plt.close(fig)
 
     """
     DETERMINE BULK FLUID TEMPERATURE FROM SET OUTLET
@@ -2717,7 +2718,7 @@ def SolarPACES2020():
     ## reset some variables:
     if fluid == 'Sodium':
         mdot = 7
-        fluxes = [0.5, 0.75, 1.]
+        fluxes = [0.5, 0.75, 1., 1.25]
     elif fluid == 'Salt':
         mdot = 14
         fluxes = [0.2, 0.3, 0.4]
@@ -2801,6 +2802,44 @@ def SolarPACES2020():
         transparent=True
     )
     plt.close(fig)
+
+    ## Check elastic stress at MOOSE 2DGPS location (last flux in list):
+    sN07740.T_int = vpoints[-1]+273.15
+    if fluid == 'Sodium':
+        sodium.update(vpoints[-1]+273.15)
+        sN07740.h_int, dP = HTC(
+            False, sodium, a, b, k, 'Chen', 'mdot', mdot
+        )
+    elif fluid == 'Salt':
+        salt.update(vpoints[-1]+273.15)
+        sN07740.h_int, dP = HTC(
+            False, salt, a, b, k, 'Dittus', 'mdot', mdot
+        )
+    sN07740.CG = fluxes[-1]*1e6
+    """ Run LaplaceSolver and post-process """
+    ret = sN07740.solve(eps=1e-6)
+    sN07740.postProcessing()
+
+    ## Sanity check:
+    plotTemperatureAnnotate(gN07740.theta, gN07740.r, sN07740.T,
+                            sN07740.T.min(), sN07740.T.max(),
+                            'N07740_T.pdf')
+    plotStress(gN07740.theta, gN07740.r, sN07740.sigmaR,
+               sN07740.sigmaR.min(), sN07740.sigmaR.max(),
+               'N07740_GPS_sigmaR_TH.pdf')
+    plotStress(gN07740.theta, gN07740.r, sN07740.sigmaTheta,
+               sN07740.sigmaTheta.min(), sN07740.sigmaTheta.max(),
+               'N07740_GPS_sigmaTheta_TH.pdf')
+    plotStress(gN07740.theta, gN07740.r, sN07740.sigmaRTheta,
+               sN07740.sigmaRTheta.min(), sN07740.sigmaRTheta.max(),
+               'N07740_GPS_sigmaRTheta_TH.pdf')
+    plotStress(gN07740.theta, gN07740.r, sN07740.sigmaZ,
+               sN07740.sigmaZ.min(), sN07740.sigmaZ.max(),
+               'N07740_GPS_sigmaZ_TH.pdf')
+    plotStress(gN07740.theta, gN07740.r, sN07740.sigmaEq,
+               sN07740.sigmaEq.min(), sN07740.sigmaEq.max(),
+               'N07740_GPS_sigmaEq_TH.pdf')
+
 
 ##################################### MAIN #####################################
 

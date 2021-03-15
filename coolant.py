@@ -216,7 +216,7 @@ def HTC(debug, thermo, a, b, k, correlation, mode, arg):
     elif correlation == 'Petukhov':
         # Petukhov:
         # https://doi.org/10.1016/S0065-2717(08)70153-9
-        Nu = sys.ecit("Correlation not yet implemented - try Gnielinski!")
+        Nu = sys.exit("Correlation not yet implemented - try Gnielinski!")
     elif correlation == 'Gnielinski':
         # V. Gnielinski, New Equations for Heat and Mass Transfer
         # in Turbulent Pipe and Channel Flow,

@@ -1,12 +1,12 @@
 # NonAxiSymmetrically Heated (NASH) Tube Stress
 - steady-state temperature distribution (Gauss-Seidel iteration)
-- biharmonic thermoelastic stress
+- biharmonic thermoelastic stress for plane strain, generalised plane strain (GPS) and GPS with annulled bending moment
 
 As described in journal paper:
 ### Thermoelastic stress in concentrating solar receiver tubes: A retrospect on stress analysis methodology, and comparison of salt and sodium
 Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
 
-### Timoshenko1951()
+### timoshenko1951.py
 <code>
 =========== Case 135 p412 Timoshenko & Goodier, 1951 ===========
 
@@ -28,7 +28,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                       sigma_Eq:  126.9543 (MPa)
 </code>
 
-### Holms1952()
+### holms1952.py
 <code>
 ================== Holms (1952), NACA-TR-1059 ==================
 
@@ -62,7 +62,7 @@ Solar Energy 160 (2018) 368-379 - https://doi.org/10.1016/j.solener.2017.12.003
                     12.0 (in.): -53011.9613 (psi)
 </code>
 
-### SE6413()
+### se6413.py
 <code>
 =============== NPS Sch. 5S 1" S31609 at 450degC ===============
 

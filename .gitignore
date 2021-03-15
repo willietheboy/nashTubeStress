@@ -12,3 +12,9 @@
 
 # Any archives left around
 *.zip
+
+# Routines and associated input files:
+astri2.py
+solarpaces2020.py
+gen3L.py
+inputs/axialFluxMOOSE.txt

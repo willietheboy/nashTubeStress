@@ -653,7 +653,7 @@ if __name__ == "__main__":
 
     s.R_f = 0.
     # internal pressure:
-    #specAlign = ['right', 'center', 'left']
+    specAlign = ['left', 'left', 'right']
     labels = np.array([0, 5, 10])
     stressSalt = np.zeros(len(labels))
     for i in range(len(labels)):
@@ -670,7 +670,7 @@ if __name__ == "__main__":
     for i in range(len(labels)):
         ax2.annotate('${0:g}$'.format(labels[i]), \
                      xy=(stressSalt[i], 26), \
-                     xycoords='data', horizontalalignment=alignRev[i],
+                     xycoords='data', horizontalalignment=specAlign[i],
                      fontsize=fs)
 
     s.P_i = 0e5
@@ -736,7 +736,7 @@ if __name__ == "__main__":
     for i in range(len(labels)):
         ax2.annotate('${0:g}$'.format(labels[i]), \
                      xy=(stressSod[i], 26), \
-                     xycoords='data', horizontalalignment=alignRev[i],
+                     xycoords='data', horizontalalignment=specAlign[i],
                      fontsize=fs)
 
     #ax2.set_title('\\textbf{(b)} Molten salt')
@@ -748,7 +748,7 @@ if __name__ == "__main__":
         '$p_\\mathrm{i}$\n\small{(MPa)}'], fontsize='large'
     )
 
-    ax2.set_xlim(200, 460)
+    ax2.set_xlim(190, 460)
     ax2.set_xlabel(r'\textsc{max. equiv. stress}, '+\
                    '$\max\sigma_\mathrm{Eq}$ [MPa]')
     fig2.tight_layout()
@@ -908,11 +908,11 @@ if __name__ == "__main__":
     b = OD/2e3         # outside tube radius [mm->m]
     a = (b-WT*1e-3)     # inside tube radius [mm->m]
     g = nts.Grid(nr=nr, nt=nt, rMin=a, rMax=b) # nr, nt -> resolution
-    for mat in ['S31609', 'K90901']:
+    for mat in ['316H', 'P91']:
         headerprint('Reproducing Kistler (1987) for {}'.format(mat), ' ')
-        if mat == 'S31609':
+        if mat == '316H':
             k = 21; alpha=20e-6; E = 165e9; nu = 0.31
-        if mat == 'K90901':
+        if mat == 'P91':
             k = 27.5; alpha=14e-6; E = 183e9; nu = 0.3
         s = nts.Solver(g, debug=False, CG=0.85e6, k=k, T_int=723.15, R_f=0,
                        A=0.968, epsilon=0.87, T_ext=293.15, h_ext=h_ext,

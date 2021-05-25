@@ -435,8 +435,10 @@ class Solver:
         # Pressure stress component:
         PR = ((a2 * self.P_i) / (b2 - a2)) * (1 - (b2 / meshR2))
         PTheta = ((a2 * self.P_i) / (b2 - a2)) * (1 + (b2 / meshR2))
-        ## uncomment for simple plane strain:
-        PZ = 0. ##(a2 * self.P_i) / (b2 - a2)
+        ## generalised plane strain:
+        PZ =  (a2 * self.P_i) / (b2 - a2)
+        if not self.GPS:
+            PZ =  2*nu*(a2 * self.P_i) / (b2 - a2)
         PEq = np.sqrt(0.5 * ((PR - PTheta)**2 + \
                              (PTheta - PZ)**2 + \
                              (PZ - PR)**2))
@@ -526,14 +528,6 @@ class Solver:
 
 ################################### FUNCTIONS ##################################
 
-def fourierTheta(theta, a0, *c):
-    """ Timoshenko & Goodier equation """
-    ret = a0 + np.zeros(len(theta))
-    for i, n in [*zip(range(0,len(c),2), range(1,int(len(c)/2)+1))]:
-        ret += (c[i] * np.cos(n * theta)) + \
-            (c[i+1] * np.sin(n * theta))
-    return ret
-
 def headerprint(string, mychar='='):
     """ Prints a centered string to divide output sections. """
     mywidth = 64
@@ -554,3 +548,11 @@ def matprint(string, value):
     """ Ensure uniform formatting of matrix value outputs. """
     print("{0}:".format(string))
     print(value)
+
+def fourierTheta(theta, a0, *c):
+    """ Timoshenko & Goodier equation """
+    ret = a0 + np.zeros(len(theta))
+    for i, n in [*zip(range(0,len(c),2), range(1,int(len(c)/2)+1))]:
+        ret += (c[i] * np.cos(n * theta)) + \
+            (c[i+1] * np.sin(n * theta))
+    return ret

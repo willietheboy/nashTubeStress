@@ -38,50 +38,8 @@ import nashTubeStress as nts
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-## uncomment following if not in ~/.config/matplotlib/matplotlibrc already
-#params = {'text.latex.preamble': [r'\usepackage{newtxtext,newtxmath,siunitx}']}
-#plt.rcParams.update(params)
-mpl.rc('figure.subplot', bottom=0.13, top=0.95)
-mpl.rc('figure.subplot', left=0.15, right=0.95)
-from matplotlib import colors, ticker, cm
-from matplotlib.transforms import Affine2D
-from matplotlib.lines import Line2D
-from matplotlib.projections import PolarAxes
 import matplotlib.transforms as mtransforms
-import matplotlib.patches as mpatches
 from mpl_toolkits.axes_grid1.parasite_axes import SubplotHost
-from mpl_toolkits.axisartist.grid_finder import \
-    (FixedLocator, MaxNLocator, DictFormatter)
-
-def plotStress(theta, r, sigma, sigmaMin, sigmaMax, filename):
-    fig = plt.figure(figsize=(3.5, 3.5))
-    fig.subplots_adjust(left=-1)
-    fig.subplots_adjust(right=1)
-    fig.subplots_adjust(bottom=0.1)
-    fig.subplots_adjust(top=0.9)
-    ax = fig.add_subplot(111, projection='polar')
-    ax.set_theta_direction(-1)
-    ax.set_theta_offset(np.radians(90))
-    cmap = cm.get_cmap('magma')
-    levels = ticker.MaxNLocator(nbins=10).tick_values(
-        sigmaMin*1e-6, sigmaMax*1e-6
-    )
-    cf = ax.contourf(theta, r, sigma*1e-6, levels=levels, cmap=cmap)
-    ax.set_rmin(0)
-    cb = fig.colorbar(cf, ax=ax)
-    cb.set_label('$\sigma$ [MPa]')
-    ax.patch.set_visible(False)
-    ax.spines['polar'].set_visible(False)
-    gridlines = ax.get_xgridlines()
-    ticklabels = ax.get_xticklabels()
-    for i in range(5, len(gridlines)):
-        gridlines[i].set_visible(False)
-        ticklabels[i].set_visible(False)
-    ax.grid(axis='y', linewidth=0)
-    ax.grid(axis='x', linewidth=0.2)
-    plt.setp(ax.get_yticklabels(), visible=False)
-    fig.savefig(filename, transparent=True)
-    plt.close(fig)
 
 def plotComponentStress(r, sigmaR, sigmaTheta, sigmaZ,
                         sigmaEq, filename, i, loc):
@@ -145,7 +103,7 @@ def plotPrincipalStress(r, P1, P2, P3, TG, filename, i, loc):
     # ax.fill_between(r[i,:]*1e3, sigmaZ[i,:]*1e-6, color='C2',
     #                 alpha=0.3)
     ax.plot(r[i,:]*1e3, TG[i,:]*1e-6, 's-',
-            label='$\sigma_\mathrm{\textsc{mss}}$')
+            label=r'$\sigma_\mathrm{\textsc{mss}}$')
     ax.set_xlabel(r'\textsc{radius}, $r$ (mm)')
     ax.set_xlim((a*1e3)-0.1,(b*1e3)+0.1)
     ax.set_ylabel(r'\textsc{stress}, $\sigma$ (MPa)')
@@ -305,7 +263,7 @@ def iterateTensor(func, xx, yy, zz, xy):
 
 if __name__ == "__main__":
     """
-    Bree, J. Elastic-plastic behaviour of thin tubes subjected to internal pressure and intermittent high-heat fluxes with application to Fast-Nuclear-Reactor fuel elements J. Strain Anal., 1967, 2, 226-238
+    Bree, J. Strain Anal., 1967, 2, 226-238
     """
     headerprint(' BREE ')
 
@@ -315,21 +273,45 @@ if __name__ == "__main__":
 
     R = (a + b)/2.
     wt = b-a
-    P = 5e5 # Pa
-    sig_p = P * R / wt
-    valprint('sig_p', sig_p*1e-6, 'MPa')
 
-    ## Material properties reflect 316H at 600 degC
-    E = 150e9
-    valprint('E', E*1e-9, 'GPa')
-    alpha = 1.88e-5
-    valprint('alpha', alpha*1e6, 'x1e6 K^-1')
+    # ## Material properties reflect 316H at 600 degC
+    # E = 150e9
+    # alpha = 1.88e-5
+    # nu = 0.31
+    # sig_y = 114e6
+
+    ## Material properties reflect 316H at 650 degC
+    E = 146e9
+    alpha = 1.9e-5
     nu = 0.31
+    sig_y = 110e6
 
-    dT = 50
-    valprint('dT', dT, 'K')
-    sig_t = E * alpha * dT / (2 * (1 - nu))
+    valprint('E', E*1e-9, 'GPa')
+    valprint('alpha', alpha*1e6, 'x1e6 K^-1')
+    valprint('sig_y', sig_y*1e-6, 'MPa')
+
+    ## Prescribe actual pressure and temperature difference across wall:
+    # P = 5e5 # Pa
+    # dT = 50
+    # sig_p = P * R / wt
+    # sig_t = E * alpha * dT / (2 * (1 - nu))
+
+    ## Bree coordinates:
+    X = 0.5
+    valprint('X', X)
+    Y = 1
+    valprint('Y', Y)
+    # Primary membrane stress
+    sig_p = sig_y * X
+    p = sig_p * wt / R
+    valprint('p', p*1e-6, 'MPa')
+    valprint('sig_p', sig_p*1e-6, 'MPa')
+    ## Secondary peak stress:
+    sig_t = sig_y * Y
     valprint('max. sig_t', sig_t*1e-6, 'MPa')
+    dT = sig_t * (2 * (1 - nu)) / (alpha * E)
+    valprint('dT', dT, 'K')
+
 
     ## True: generalised plane strain (default); False: simple plane strain:
     GPS = True
@@ -338,7 +320,8 @@ if __name__ == "__main__":
     g = nts.Grid(nr=nr, nt=nt, rMin=a, rMax=b)
     s = nts.Solver(g, debug=False, alpha=alpha,
                    E=E, nu=nu, n=1, GPS=GPS,
-                   P_i=P)
+                   P_i=p)
+    ## Only pressure:
     s.postProcessing()
     plotComponentStress(
         g.r, s.sigmaR, s.sigmaTheta, s.sigmaZ,
@@ -361,9 +344,9 @@ if __name__ == "__main__":
         g.r, c['P1'], c['P2'], c['P3'],
         c['TG'], 'Bree_princ-therm.pdf', 0, 'best')
 
-    ## Both:
-    s.T = dT * ((np.log(g.r / a) / np.log(b / a)))
-    s.P_i=P
+    ## Apply both pressure and temperature:
+    #s.T = dT * ((np.log(g.r / a) / np.log(b / a)))
+    s.P_i=p
     s.T = dT * ((g.r - a) / (b - a))
     s.postProcessing()
     plotComponentStress(
@@ -373,19 +356,3 @@ if __name__ == "__main__":
     plotPrincipalStress(
         g.r, c['P1'], c['P2'], c['P3'],
         c['TG'], 'Bree_princ-total.pdf', 0, 'best')
-
-    # plotStress(g.theta, g.r, s.sigmaR,
-    #            s.sigmaR.min(), s.sigmaR.max(),
-    #            'Bree_sigmaR.pdf')
-    # plotStress(g.theta, g.r, s.sigmaTheta,
-    #            s.sigmaTheta.min(), s.sigmaTheta.max(),
-    #            'Bree_sigmaTheta.pdf')
-    # plotStress(g.theta, g.r, s.sigmaRTheta,
-    #            s.sigmaRTheta.min(), s.sigmaRTheta.max(),
-    #            'Bree_sigmaRTheta.pdf')
-    # plotStress(g.theta, g.r, s.sigmaZ,
-    #            s.sigmaZ.min(), s.sigmaZ.max(),
-    #            'Bree_sigmaZ.pdf')
-    # plotStress(g.theta, g.r, s.sigmaEq,
-    #            s.sigmaEq.min(), s.sigmaEq.max(),
-    #            'Bree_sigmaEq.pdf')

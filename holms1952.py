@@ -33,6 +33,7 @@ UR_ = UnitRegistry()
 Q_ = UR_.Quantity
 
 import nashTubeStress as nts
+from printers import *
 
 ################################### PLOTTING ###################################
 
@@ -133,29 +134,6 @@ def plotNACA(r, sigma, fea, i, filename, loc, ylabel):
     fig.tight_layout()
     fig.savefig(filename, transparent=True)
     plt.close(fig)
-
-################################### FUNCTIONS ##################################
-
-def headerprint(string, mychar='='):
-    """ Prints a centered string to divide output sections. """
-    mywidth = 64
-    numspaces = mywidth - len(string)
-    before = int(ceil(float(mywidth-len(string))/2))
-    after  = int(floor(float(mywidth-len(string))/2))
-    print("\n"+before*mychar+string+after*mychar+"\n")
-
-def valprint(string, value, unit='-'):
-    """ Ensure uniform formatting of scalar value outputs. """
-    print("{0:>30}: {1: .4f} {2}".format(string, value, unit))
-
-def valeprint(string, value, unit='-'):
-    """ Ensure uniform formatting of scalar value outputs. """
-    print("{0:>30}: {1: .4e} {2}".format(string, value, unit))
-
-def matprint(string, value):
-    """ Ensure uniform formatting of matrix value outputs. """
-    print("{0}:".format(string))
-    print(value)
 
 ##################################### MAIN #####################################
 

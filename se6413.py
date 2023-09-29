@@ -35,6 +35,7 @@ Q_ = UR_.Quantity
 
 import nashTubeStress as nts
 import coolant
+from printers import *
 
 ################################### PLOTTING ###################################
 
@@ -190,56 +191,6 @@ def plotComponentStress(r, sigmaR, sigmaTheta, sigmaZ,
     fig.savefig(filename, transparent=True)
     plt.close(fig)
 
-################################### FUNCTIONS ##################################
-
-def headerprint(string, mychar='='):
-    """ Prints a centered string to divide output sections. """
-    mywidth = 64
-    numspaces = mywidth - len(string)
-    before = int(ceil(float(mywidth-len(string))/2))
-    after  = int(floor(float(mywidth-len(string))/2))
-    print("\n"+before*mychar+string+after*mychar+"\n")
-
-def valprint(string, value, unit='-'):
-    """ Ensure uniform formatting of scalar value outputs. """
-    print("{0:>30}: {1: .4f} {2}".format(string, value, unit))
-
-def valeprint(string, value, unit='-'):
-    """ Ensure uniform formatting of scalar value outputs. """
-    print("{0:>30}: {1: .4e} {2}".format(string, value, unit))
-
-def matprint(string, value):
-    """ Ensure uniform formatting of matrix value outputs. """
-    print("{0}:".format(string))
-    print(value)
-
-def findFlux(flux, s, f, i, point):
-    """
-    Helper for finding optimum flux for certain stress condition
-    """
-    s.CG = flux
-
-    ret = s.solve(eps=1e-6)
-    s.postProcessing()
-
-    if point=='max':
-        # T_max|sigmaEqMax:
-        sigmaEqMax = np.interp(np.max(s.T), f[:,0], f[:,i])
-        return sigmaEqMax - np.max(s.sigmaEq)
-    elif point=='inside':
-        # T_i:
-        sigmaEqMax = np.interp(s.T[0,0], f[:,0], f[:,i])
-        return sigmaEqMax - s.sigmaEq[0,0]
-    elif point=='outside':
-        # T_o
-        sigmaEqMax = np.interp(s.T[0,-1], f[:,0], f[:,i])
-        return sigmaEqMax - s.sigmaEq[0,-1]
-    elif point=='membrane':
-        # Assuming shakedown has occured (membrane stress remains):
-        sigmaEqMax = np.interp(np.average(s.T[0,:]), f[:,0], f[:,i])
-        return sigmaEqMax - np.average(s.sigmaEq[0,:])
-    else: sys.exit('Variable point {} not recognised'.format(point))
-
 ##################################### MAIN #####################################
 
 if __name__ == "__main__":
@@ -259,10 +210,11 @@ if __name__ == "__main__":
     g = nts.Grid(nr=nr, nt=nt, rMin=a, rMax=b) # nr, nt -> resolution
 
     """ Create instance of LaplaceSolver: """
-    s = nts.Solver(g, debug=True, CG=0.85e6, k=k, T_int=723.15, R_f=0,
-                   A=0.968, epsilon=0.87, T_ext=293.15, h_ext=h_ext,
-                   P_i=0e5, alpha=alpha, E=E, nu=nu, n=1,
-                   bend=False)
+    s = nts.Solver(
+        g, debug=True, CG=0.85e6, k=k, T_int=723.15, R_f=0,
+        A=0.968, epsilon=0.87, T_ext=293.15, h_ext=h_ext,
+        P_i=0e5, alpha=alpha, E=E, nu=nu, n=1, bend=False
+    )
 
     """ Any of the properties defined above can be changed, e.g.: """
     # s.CG = 1.2e5 ...
@@ -279,8 +231,10 @@ if __name__ == "__main__":
     #s.intBC = s.intTubeFlux
     s.intBC = s.intTubeConv
 
-    salt = coolant.nitrateSalt(True); salt.update(723.15)
-    h_int, dP = coolant.HTC(True, salt, a, b, 20, 'Dittus', 'mdot', 5)
+    salt = coolant.NitrateSalt(); salt.update(723.15)
+    h_int = coolant.heat_transfer_coeff(
+        salt, a, b, 'Dittus', 'dotm', 5
+    )
     s.h_int = h_int
     t = time.perf_counter(); ret = s.solve(eps=1e-6); s.postProcessing()
     valprint('Time', time.perf_counter() - t, 'sec')
@@ -314,8 +268,10 @@ if __name__ == "__main__":
                        s.sigmaEq.min(), s.sigmaEq.max(),
                        'right', 'S31609_nitrateSalt_sigmaEq.pdf')
 
-    sodium = coolant.liquidSodium(True); sodium.update(723.15)
-    h_int, dP = coolant.HTC(True, sodium, a, b, 20, 'Skupinski', 'mdot', 4)
+    sodium = coolant.LiquidSodium(); sodium.update(723.15)
+    h_int = coolant.heat_transfer_coeff(
+        sodium, a, b, 'Skupinski', 'dotm', 4
+    )
     s.h_int = h_int
     t = time.perf_counter(); ret = s.solve(eps=1e-6); s.postProcessing()
     valprint('Time', time.perf_counter() - t, 'sec')
@@ -902,80 +858,3 @@ if __name__ == "__main__":
     fig.tight_layout()
     fig.savefig('S31609_sensitivityFluxProfiles.pdf', transparent=True)
     plt.close(fig)
-
-    OD = 19.05 # mm
-    WT = 1.2446 # mm
-    b = OD/2e3         # outside tube radius [mm->m]
-    a = (b-WT*1e-3)     # inside tube radius [mm->m]
-    g = nts.Grid(nr=nr, nt=nt, rMin=a, rMax=b) # nr, nt -> resolution
-    for mat in ['316H', 'P91']:
-        headerprint('Reproducing Kistler (1987) for {}'.format(mat), ' ')
-        if mat == '316H':
-            k = 21; alpha=20e-6; E = 165e9; nu = 0.31
-        if mat == 'P91':
-            k = 27.5; alpha=14e-6; E = 183e9; nu = 0.3
-        s = nts.Solver(g, debug=False, CG=0.85e6, k=k, T_int=723.15, R_f=0,
-                       A=0.968, epsilon=0.87, T_ext=293.15, h_ext=h_ext,
-                       P_i=0e5, alpha=alpha, E=E, nu=nu, n=1,
-                       bend=False)
-        s.extBC = s.extTubeHalfCosFluxRadConv
-        s.intBC = s.intTubeConv
-        #s.debug = False
-        sodium.debug = False; salt.debug = False
-        fv = np.genfromtxt(os.path.join('mats', mat), delimiter=';')
-        fv[:,0] += 273.15 # degC to K
-        fv[:,2] *= 3e6 # apply 3f criteria to Sm and convert MPa->Pa
-        T_int = np.linspace(290, 565, 12)+273.15
-        TSod_met = np.zeros(len(T_int))
-        fluxSod = np.zeros(len(T_int))
-        TSalt_met = np.zeros(len(T_int))
-        fluxSalt = np.zeros(len(T_int))
-        t = time.perf_counter()
-        for i in range(len(T_int)):
-            s.T_int = T_int[i]
-            sodium.update(T_int[i])
-            s.h_int, dP = coolant.HTC(False, sodium, a, b, 20, 'Chen', 'velocity', 4)
-            fluxSod[i] = opt.newton(
-                findFlux, 1e5,
-                args=(s, fv, 2, 'outside'),
-                maxiter=1000, tol=1e-2
-            )
-            TSod_met[i] = np.max(s.T)
-            salt.update(T_int[i])
-            s.h_int, dP = coolant.HTC(False, salt, a, b, 20, 'Dittus', 'velocity', 4)
-            fluxSalt[i] = opt.newton(
-                findFlux, 1e5,
-                args=(s, fv, 2, 'outside'),
-                maxiter=1000, tol=1e-2
-            )
-            TSalt_met[i] = np.max(s.T)
-        valprint('Time taken', time.perf_counter() - t, 'sec')
-
-        fig = plt.figure(figsize=(3.5, 3.5))
-        ax = fig.add_subplot(111)
-        ax.plot(T_int-273.15,fluxSod*1e-6, label=r'Sodium')
-        ax.plot(T_int-273.15,fluxSalt*1e-6, label=r'Nitrate salt')
-        ax.set_xlabel(r'\textsc{fluid temperature}, '+\
-                      '$T_\mathrm{f}$ (\si{\celsius})')
-        ax.set_ylabel(
-            r'\textsc{incident flux}, $\vec{\phi_\mathrm{q}}$ '+\
-            '(\si{\mega\watt\per\meter\squared})'
-        )
-        #ax.set_ylim(0.2, 1.6)
-        ax.legend(loc='best')
-        fig.tight_layout()
-        fig.savefig('{0}_OD{1:.2f}_WT{2:.2f}_peakFlux.pdf'.format(mat, OD, WT),
-                    transparent=True)
-        fig.savefig('{0}_OD{1:.2f}_WT{2:.2f}_peakFlux.png'.format(mat, OD, WT),
-                    dpi=150)
-        plt.close(fig)
-        ## Dump peak flux results to CSV file:
-        csv = np.c_[T_int,
-                    TSod_met, fluxSod,
-                    TSalt_met, fluxSalt,
-        ]
-        np.savetxt('{0}_OD{1:.2f}_WT{2:.2f}_peakFlux.csv'.format(mat, OD, WT),
-                   csv, delimiter=',', header='T_int(K),'+\
-                   'TSod_metal(K),fluxSod(W/(m^2.K))'+\
-                   'TSalt_metal(K),fluxSalt(W/(m^2.K))'
-        )
